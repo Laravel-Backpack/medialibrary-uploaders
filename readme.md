@@ -6,7 +6,7 @@
 
 ##### Upload files using Spatie Media Library with Backpack fields.
 
-This package provides the ability to store files in projects that use the [Backpack for Laravel](https://backpackforlaravel.com/) administration panel with [Spatie Media Library](https://github.com/spatie/laravel-media-library). 
+This package provides the ability to store files in projects that use the [Backpack for Laravel](https://backpackforlaravel.com/) administration panel with [Spatie Media Library](https://github.com/spatie/laravel-medialibrary). 
 
 More exactly, it provides some helper classes that will handle the file uploads and retrieve them back to use on the UI.
 
