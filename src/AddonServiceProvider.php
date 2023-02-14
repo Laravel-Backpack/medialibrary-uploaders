@@ -19,15 +19,12 @@ class AddonServiceProvider extends ServiceProvider
     {
         $this->autoboot();
 
-        CrudField::macro('withMedia', function ($saveCallback = null, $getCallback = null) {
-            if (isset($this->getAttributes()['subfields'])) {
-                MediaUploads::handleRepeatableUploads($this, $saveCallback, $getCallback);
-                return;
-            }
+        CrudField::macro('withMedia', function ($mediaDefinition = null) {
+            MediaLibraryEventRegister::handle($this, $mediaDefinition);
+        });
 
-            MediaUploads::handleUploads($this, $saveCallback, $getCallback);
+        CrudField::macro('withMediaFromModel', function (string $collectionName) {
+            MediaLibraryEventRegister::handle($this, $collectionName);
         });
     }
-
-    
 }

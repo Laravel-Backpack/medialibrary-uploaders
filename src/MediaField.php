@@ -7,13 +7,12 @@ use Illuminate\Support\Str;
 
 abstract class MediaField
 {
-
     public $isRepeatable = false;
 
     public $fieldName;
 
     public $parentField;
-    
+
     public $fileName = null;
 
     public $mediaName;
@@ -22,7 +21,7 @@ abstract class MediaField
 
     public $disk;
 
-    public $saveCallback = null;
+    public $savingEventCallback = null;
 
     public $getCallback = null;
 
@@ -30,22 +29,39 @@ abstract class MediaField
 
     public function __construct(string $fieldName)
     {
-        $this->fieldName = $this->mediaName = $fieldName;
-        $this->disk = config('media-library.disk_name');
+        $this->fieldName = $fieldName;
     }
 
     abstract public function save(Model $entry, $value = null);
 
     abstract public function getForDisplay(Model $entry);
 
+    /**
+     * Overwrite the default backpack definition with developer preferences
+     *
+     * @param array $definition
+     * @return self
+     */
+    public function definition($definition)
+    {
+        $definition = (array) $definition;
+
+        $this->disk = $definition['disk'] ?? config('media-library.disk_name');
+        $this->collection = $definition['collection'] ?? 'default';
+        $this->mediaName = $definition['name'] ?? $this->fieldName;
+        $this->savingEventCallback = $definition['saving'] ?? null;
+
+        return $this;
+    }
+
     public function get(Model $entry)
     {
         $callback = $this;
-        
-        if($this->getCallback) {
+
+        if ($this->getCallback) {
             $callback = call_user_func($this->getCallback, $this);
         }
-        
+
         if ($this->isRepeatable || $this->isMultiple) {
             return $entry->getMedia($callback->collection, function ($media) use ($callback) {
                 return $media->name === $callback->mediaName;
@@ -60,27 +76,6 @@ abstract class MediaField
     public static function name(string $name): self
     {
         return new static($name);
-    }
-
-    public function collection(string $collection): self
-    {
-        $this->collection = $collection;
-
-        return $this;
-    }
-
-    public function mediaName(string $mediaName): self
-    {
-        $this->mediaName = $mediaName;
-
-        return $this;
-    }
-
-    public function disk(string $disk): self
-    {
-        $this->disk = $disk;
-
-        return $this;
     }
 
     public function multiple()
@@ -108,10 +103,6 @@ abstract class MediaField
 
     private function getFileName($file)
     {
-        if (is_callable($this->fileName)) {
-            return call_user_func_array($this->fileName, [$file, $this]);
-        }
-
         if (is_file($file)) {
             return $this->fileName ?? Str::beforeLast($file->getClientOriginalName(), '.');
         }
@@ -124,13 +115,13 @@ abstract class MediaField
         $entry = $entry
             ->addMediaFromBase64($file);
 
-        return $this->mediaWithCustomNames($entry, $file, $extension); 
+        return $this->mediaWithCustomNames($entry, $file, $extension);
     }
 
     private function mediaWithCustomNames($entry, $file, $extension)
     {
-        return $entry->usingName($this->mediaName)
-            ->usingFileName($this->getFileName($file).'.'.$extension);
+        return $entry->usingName($this->mediaName);
+            //->usingFileName($this->getFileName($file).'.'.$extension);
     }
 
     public function addMediaFile($entry, $file)
@@ -139,13 +130,6 @@ abstract class MediaField
             ->addMedia($file);
 
         return $this->mediaWithCustomNames($entry, $file, $file->extension());
-    }
-
-    public function saveCallback(callable|null $callback)
-    {
-        $this->saveCallback = $callback;
-
-        return $this;
     }
 
     public function getCallback(callable|null $callback)

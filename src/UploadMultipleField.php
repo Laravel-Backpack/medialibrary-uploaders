@@ -32,14 +32,16 @@ class UploadMultipleField extends MediaField
             if ($file && is_file($file)) {
 
                 $media = $this->addMediaFile($entry, $file);
+                
+                /** @var \Spatie\MediaLibrary\MediaCollections\FileAdder $constrainedMedia */
+                $constrainedMedia = new ConstrainedFileAdder(null);
+                $constrainedMedia->setFileAdder($media);
 
-                if($this->saveCallback) {
-                    $media = call_user_func_array($this->saveCallback,[$media, $this]);
+                if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
+                    $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
                 }
-    
-                if(is_a($media, \Spatie\MediaLibrary\MediaCollections\FileAdder::class)) {
-                    $media->toMediaCollection($this->collection);
-                }
+
+                $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
             }
         }
     }
@@ -59,14 +61,16 @@ class UploadMultipleField extends MediaField
 
                     $media = $this->addMediaFile($entry, $file);
                     $media = $media->setOrder($row);
+                    
+                    /** @var \Spatie\MediaLibrary\MediaCollections\FileAdder $constrainedMedia */
+                    $constrainedMedia = new ConstrainedFileAdder(null);
+                    $constrainedMedia->setFileAdder($media);
 
-                    if($this->saveCallback) {
-                        $media = call_user_func_array($this->saveCallback,[$media, $this]);
+                    if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
+                        $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
                     }
-        
-                    if(is_a($media, \Spatie\MediaLibrary\MediaCollections\FileAdder::class)) {
-                        $media->toMediaCollection($this->collection);
-                    }
+
+                    $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
                 }
             }
         }
