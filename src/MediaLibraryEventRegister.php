@@ -6,26 +6,23 @@ class MediaLibraryEventRegister
 {
     public static function handle($field, $mediaDefinition): void
     {
-       // dd($field, $mediaDefinition);
         $attributes = $field->getAttributes();
 
-        $model = $attributes['model'] ?? $field->crud()->getModel();
-        $model = is_string('model') ? $model : get_class($model);
+        $attributes['mediaModel'] = $attributes['model'] ?? get_class($field->crud()->getModel());
+        $attributes['mediaName'] = $attributes['name'];
 
         if (! isset($attributes['subfields'])) {
             $mediaType = self::getUploaderFromFieldType($attributes, $mediaDefinition);
-//dd($mediaType);
-            self::setupModelEvents($model, $mediaType);
+            self::setupModelEvents($attributes['mediaModel'], $mediaType);
 
             return;
         }
 
-        self::handleRepeatableUploads($attributes['name'], $model, $attributes['subfields'], $mediaDefinition);
+        self::handleRepeatableUploads($attributes, $mediaDefinition);
     }
 
     private static function setupModelEvents($model, ...$fields): void
     {
-       // dD($model, $fields);
         foreach ($fields as $field) {
             $model::saving(function ($entry) use ($field) {
                 if (is_a($field, \Backpack\MediaLibraryUploads\RepeatableUploads::class)) {
@@ -42,13 +39,14 @@ class MediaLibraryEventRegister
         }
     }
 
-    public static function handleRepeatableUploads($name, $model, $subfields, $mediaDefinition)
+    public static function handleRepeatableUploads($field, $mediaDefinition)
     {
         $repeatableDefinitions = [];
 
-        foreach ($subfields as $subfield) {
+        foreach ($field['subfields'] as $subfield) {
             if (isset($subfield['withMedia'])) {
-                $model = $subfield['baseModel'] ?? $model;
+                $subfield['mediaModel'] = $subfield['baseModel'] ?? $field['mediaModel'];
+                $subfield['mediaName'] = $subfield['name'];
 
                 $subfieldMediaDefinition = $subfield['withMedia'];
 
@@ -58,12 +56,12 @@ class MediaLibraryEventRegister
 
                 $mediaType = static::getUploaderFromFieldType($subfield, $subfieldMediaDefinition);
 
-                $repeatableDefinitions[$model][] = $mediaType;
+                $repeatableDefinitions[$subfield['mediaModel']][] = $mediaType;
             }
         }
 
         foreach ($repeatableDefinitions as $model => $mediaTypes) {
-            $repeatableDefinition = RepeatableUploads::name($name)->uploads(...$mediaTypes);
+            $repeatableDefinition = RepeatableUploads::name($field['name'])->uploads(...$mediaTypes);
 
             static::setupModelEvents($model, $repeatableDefinition);
         }
@@ -73,19 +71,19 @@ class MediaLibraryEventRegister
     {
         switch($field['type']) {
             case 'image':
-                return ImageField::name($field['name'])->definition($mediaDefinition);
+                return ImageField::name($field)->definition($mediaDefinition);
                 break;
             case 'upload':
-                return UploadField::name($field['name'])->definition($mediaDefinition);
+                return UploadField::name($field)->definition($mediaDefinition);
                 break;
             case 'upload_multiple':
-                return UploadMultipleField::name($field['name'])->definition($mediaDefinition)->multiple();
+                return UploadMultipleField::name($field)->definition($mediaDefinition)->multiple();
                 break;
             case 'repeatable':
-                return RepeatableUploads::name($field['name'])->definition($mediaDefinition);
+                return RepeatableUploads::name($field)->definition($mediaDefinition);
                 break;
             default:
-                throw new \Exception('Unknow uploader type for field '.$field['name'].' with type: '.$field['name'].' .');
+                throw new \Exception('Unknow uploader type for field '.$field['name'].' with type: '.$field['type'].' .');
         }
     }
 }

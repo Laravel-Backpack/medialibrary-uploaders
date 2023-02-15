@@ -35,9 +35,9 @@ php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServicePr
 
 #### 3. Publish&Run the migrations
 ```bash
-# optionaly publish the migrations:
-# php artisan vendor:publish --provider="Backpack\MediaLibraryUploads" --tag="migrations"
+php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="migrations"
 
+# NOTE: Spatie migration does not come with a `down()` method by default, add one if you need it before migrating.
 php artisan migrate
 ```
 
@@ -72,36 +72,50 @@ CRUD::field('gallery')
         ->withMedia(); 
 ```
 
-This will register functions in your model events  `saving` and `retrieved`. 
-The `saving` event will handle the file upload and the `retrieved` event will retrieve the file from the media library and set it to the field for display.
-
 ## Configuration
 
-You can pass a closure to `->withMedia(function($media) { ... })` or `'withMedia' => function($media) { ... }` to customize the options, or totally overwrite the behavior.
+Backpack sets up some handy defaults for you when handling the media, and provide you the way to customize the bits you need from Spatie Media Library.
+
+You can do so by passing an array to `->withMedia([])` or `'withMedia' => []`.
 
 ```php
 CRUD::field('main_image')
         ->label('Main Image')
         ->type('image')
-        ->withMedia(function($media, $field) {
-            return $media->toMediaCollection('my_collection', 'my_disk');
-        });
+        ->withMedia([
+            'collection' => 'my_collection', // uses the spatie default that is `default`
+            'disk' => 'my_disk', // uses by default the disk configured in spatie config file
+            'mediaName' => 'custom_media_name' // by default it will be the field name
+            'saving' => function($spatieMedia, $backpackMediaObject) {
+                return $spatieMedia->usingFileName('main_image.jpg')
+                                    ->withResponsiveImages();
+            }
+        ]);
 ```
-**NOTE:** If you manually set the `collection`, `disk` or `media name`, you should also set the `disk` and `collection` and `mediaName` attributes as a second closure in the `->withMedia()` method.
+**NOTE:** Some methods will be called automatically by Backpack and you shoudn't call them inside the closure for configuration.
+- `toMediaCollection()`, `setName()`, `usingName()`, `setOrder()`, `toMediaCollectionFromRemote()` and `toMediaLibrary()` will throw an error if you manually try to call any of those in the closure. 
 
+
+You can also have the collection configured in your model as explained in [Spatie Documentation](https://spatie.be/docs/laravel-medialibrary/v10/working-with-media-collections/defining-media-collections), in that case, you just need to pass the `collection` configuration key.
 ```php
-->withMedia(
-    saveCallback: function($media, $field) {
-        return $media->toMediaCollection('my_collection', 'my_disk');
-    },
-    getCallback: function($field) {
-        return $field->disk('my_disk')->collection('my_collection');
-    }
-);
+// In your Model.php
+
+public function registerMediaCollections(): void
+{
+    $this
+        ->addMediaCollection('product_images')
+        ->useDisk('products');
+}
+
+CRUD::field('main_image')
+        ->label('Main Image')
+        ->type('image')
+        ->withMedia([
+            'collection' => 'product_images', // will pick the collection definition from your model
+        ]);
 ```
 ## Overwriting
 
-Extend the class and use your custom classes.
 
 ## Change log
 

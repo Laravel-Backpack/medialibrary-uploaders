@@ -27,9 +27,12 @@ abstract class MediaField
 
     public $isMultiple = false;
 
-    public function __construct(string $fieldName)
+    public $model;
+
+    public function __construct(array $field)
     {
-        $this->fieldName = $fieldName;
+        $this->fieldName = $field['mediaName'];
+        $this->model = $field['mediaModel'];
     }
 
     abstract public function save(Model $entry, $value = null);
@@ -46,7 +49,15 @@ abstract class MediaField
     {
         $definition = (array) $definition;
 
-        $this->disk = $definition['disk'] ?? config('media-library.disk_name');
+        if (isset($definition['collection'])) {
+            $modelDefinition = $this->modelInstance()->getRegisteredMediaCollections()
+                                    ->reject(function ($item) use ($definition) {
+                                        $item->name !== $definition['collection'] ?? '';
+                                    })
+                                    ->first();
+        }
+        
+        $this->disk = $modelDefinition?->diskName ?? $definition['disk'] ?? config('media-library.disk_name');
         $this->collection = $definition['collection'] ?? 'default';
         $this->mediaName = $definition['name'] ?? $this->fieldName;
         $this->savingEventCallback = $definition['saving'] ?? null;
@@ -73,9 +84,9 @@ abstract class MediaField
         });
     }
 
-    public static function name(string $name): self
+    public static function name(array $field): self
     {
-        return new static($name);
+        return new static($field);
     }
 
     public function multiple()
@@ -120,8 +131,8 @@ abstract class MediaField
 
     private function mediaWithCustomNames($entry, $file, $extension)
     {
-        return $entry->usingName($this->mediaName);
-            //->usingFileName($this->getFileName($file).'.'.$extension);
+        return $entry->usingName($this->mediaName)
+            ->usingFileName($this->getFileName($file).'.'.$extension);
     }
 
     public function addMediaFile($entry, $file)
@@ -137,5 +148,10 @@ abstract class MediaField
         $this->getCallback = $callback;
 
         return $this;
+    }
+
+    private function modelInstance()
+    {
+        return new $this->model;
     }
 }

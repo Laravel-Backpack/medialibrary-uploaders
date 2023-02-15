@@ -22,9 +22,5 @@ class AddonServiceProvider extends ServiceProvider
         CrudField::macro('withMedia', function ($mediaDefinition = null) {
             MediaLibraryEventRegister::handle($this, $mediaDefinition);
         });
-
-        CrudField::macro('withMediaFromModel', function (string $collectionName) {
-            MediaLibraryEventRegister::handle($this, $collectionName);
-        });
     }
 }

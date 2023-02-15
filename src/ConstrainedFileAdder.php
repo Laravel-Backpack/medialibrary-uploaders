@@ -14,6 +14,11 @@ class ConstrainedFileAdder
         abort(500, 'usingName() should be configured using: ->withMedia([\'name\' => \''.$name.'\'])');
     }
 
+    public function setName(string $name): FileAdder
+    {
+        abort(500, 'setName() should be configured using: ->withMedia([\'name\' => \''.$name.'\'])');
+    }
+
     public function setOrder(?int $order): FileAdder
     {
         abort(500, 'Order is automatically assigned by Backpack functions.');
