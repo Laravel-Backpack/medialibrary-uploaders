@@ -20,7 +20,7 @@ class AddonServiceProvider extends ServiceProvider
         $this->autoboot();
 
         CrudField::macro('withMedia', function ($mediaDefinition = null) {
-            MediaLibraryEventRegister::handle($this, $mediaDefinition);
+            RegisterMediaLibraryEvents::handle($this, $mediaDefinition);
         });
     }
 }

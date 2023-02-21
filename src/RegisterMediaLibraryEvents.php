@@ -2,7 +2,12 @@
 
 namespace Backpack\MediaLibraryUploads;
 
-class MediaLibraryEventRegister
+use Backpack\MediaLibraryUploads\Fields\ImageField;
+use Backpack\MediaLibraryUploads\Fields\RepeatableField;
+use Backpack\MediaLibraryUploads\Fields\UploadField;
+use Backpack\MediaLibraryUploads\Fields\UploadMultipleField;
+
+class RegisterMediaLibraryEvents
 {
     public static function handle($field, $mediaDefinition): void
     {
@@ -25,7 +30,7 @@ class MediaLibraryEventRegister
     {
         foreach ($fields as $field) {
             $model::saving(function ($entry) use ($field) {
-                if (is_a($field, \Backpack\MediaLibraryUploads\RepeatableUploads::class)) {
+                if (is_a($field, \Backpack\MediaLibraryUploads\RepeatableField::class)) {
                     $entry->{$field->fieldName} = json_encode($field->save($entry));
                 } else {
                     $field->save($entry);
@@ -39,7 +44,7 @@ class MediaLibraryEventRegister
         }
     }
 
-    public static function handleRepeatableUploads($field, $mediaDefinition)
+    private static function handleRepeatableUploads($field, $mediaDefinition)
     {
         $repeatableDefinitions = [];
 
@@ -61,7 +66,7 @@ class MediaLibraryEventRegister
         }
 
         foreach ($repeatableDefinitions as $model => $mediaTypes) {
-            $repeatableDefinition = RepeatableUploads::name($field['name'])->uploads(...$mediaTypes);
+            $repeatableDefinition = RepeatableField::name($field)->uploads(...$mediaTypes);
 
             static::setupModelEvents($model, $repeatableDefinition);
         }
@@ -80,7 +85,7 @@ class MediaLibraryEventRegister
                 return UploadMultipleField::name($field)->definition($mediaDefinition)->multiple();
                 break;
             case 'repeatable':
-                return RepeatableUploads::name($field)->definition($mediaDefinition);
+                return RepeatableField::name($field)->definition($mediaDefinition);
                 break;
             default:
                 throw new \Exception('Unknow uploader type for field '.$field['name'].' with type: '.$field['type'].' .');

@@ -1,8 +1,9 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads;
+namespace Backpack\MediaLibraryUploads\Fields;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
+use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -58,13 +59,11 @@ class ImageField extends MediaField
                     $media = $this->addMediaFileFromBase64($entry, $rowValue, $extension);
                     $media = $media->setOrder($row);
 
-                    /** @var \Spatie\MediaLibrary\MediaCollections\FileAdder $constrainedMedia */
                     $constrainedMedia = new ConstrainedFileAdder(null);
                     $constrainedMedia->setFileAdder($media);
-                    
+
                     if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
                         $constrainedMedia = call_user_func_array($this->savingEventCallback, [&$constrainedMedia, $this]);
-                       
                     }
 
                     $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);

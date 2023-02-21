@@ -5,6 +5,9 @@ namespace Backpack\MediaLibraryUploads;
 use Spatie\MediaLibrary\MediaCollections\FileAdder;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
+/**
+ * @mixin \Spatie\MediaLibrary\MediaCollections\FileAdder
+ */
 class ConstrainedFileAdder
 {
     private $fileAdder;
@@ -41,11 +44,12 @@ class ConstrainedFileAdder
 
     public function getFileAdder()
     {
-        foreach(get_object_vars($this->fileAdder) as $key => $value) {
-            if(!empty($this->{$key})) {
+        foreach (get_object_vars($this->fileAdder) as $key => $value) {
+            if (! empty($this->{$key})) {
                 $this->fileAdder->{$key} = $value;
             }
         }
+
         return $this->fileAdder;
     }
 
@@ -59,8 +63,9 @@ class ConstrainedFileAdder
         if (method_exists($this, $method)) {
             return $this->{$method}(...$parameters);
         }
-        
+
         $this->fileAdder->{$method}(...$parameters);
+
         return $this;
-    }   
+    }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads;
+namespace Backpack\MediaLibraryUploads\Fields;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -23,16 +23,14 @@ abstract class MediaField
 
     public $savingEventCallback = null;
 
-    public $getCallback = null;
-
     public $isMultiple = false;
 
-    public $model;
+    public $mediaModel;
 
     public function __construct(array $field)
     {
         $this->fieldName = $field['mediaName'];
-        $this->model = $field['mediaModel'];
+        $this->mediaModel = $field['mediaModel'];
     }
 
     abstract public function save(Model $entry, $value = null);
@@ -56,26 +54,20 @@ abstract class MediaField
                                     })
                                     ->first();
         }
-        
+
         $this->disk = $modelDefinition?->diskName ?? $definition['disk'] ?? config('media-library.disk_name');
         $this->collection = $definition['collection'] ?? 'default';
         $this->mediaName = $definition['name'] ?? $this->fieldName;
-        $this->savingEventCallback = $definition['saving'] ?? null;
+        $this->savingEventCallback = $definition['whenSaving'] ?? null;
 
         return $this;
     }
 
     public function get(Model $entry)
     {
-        $callback = $this;
-
-        if ($this->getCallback) {
-            $callback = call_user_func($this->getCallback, $this);
-        }
-
         if ($this->isRepeatable || $this->isMultiple) {
-            return $entry->getMedia($callback->collection, function ($media) use ($callback) {
-                return $media->name === $callback->mediaName;
+            return $entry->getMedia($this->collection, function ($media) {
+                return $media->name === $this->mediaName;
             });
         }
 
@@ -105,7 +97,7 @@ abstract class MediaField
         return $this;
     }
 
-    public function getRepeatableItemsAsArray($entry)
+    protected function getRepeatableItemsAsArray($entry)
     {
         return $this->get($entry)->transform(function ($item) {
             return [$this->fieldName => $item->getUrl(), 'order_column' => $item->order_column];
@@ -129,12 +121,6 @@ abstract class MediaField
         return $this->mediaWithCustomNames($entry, $file, $extension);
     }
 
-    private function mediaWithCustomNames($entry, $file, $extension)
-    {
-        return $entry->usingName($this->mediaName)
-            ->usingFileName($this->getFileName($file).'.'.$extension);
-    }
-
     public function addMediaFile($entry, $file)
     {
         $entry = $entry
@@ -143,15 +129,14 @@ abstract class MediaField
         return $this->mediaWithCustomNames($entry, $file, $file->extension());
     }
 
-    public function getCallback(callable|null $callback)
-    {
-        $this->getCallback = $callback;
-
-        return $this;
-    }
-
     private function modelInstance()
     {
-        return new $this->model;
+        return new $this->mediaModel;
+    }
+
+    private function mediaWithCustomNames($entry, $file, $extension)
+    {
+        return $entry->usingName($this->mediaName)
+            ->usingFileName($this->getFileName($file).'.'.$extension);
     }
 }

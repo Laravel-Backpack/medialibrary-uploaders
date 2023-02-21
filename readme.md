@@ -90,7 +90,7 @@ CRUD::field('main_image')
             // this callback will be called in the middle of media library collection config. 
             // that means that Backpack will call the initializer function, and give you the object here
             // for you to configure, you then `return` it back to Backpack and we call the termination method. Sounds good?
-            'saving' => function($spatieMedia, $backpackMediaObject) {
+            'whenSaving' => function($spatieMedia, $backpackMediaObject) {
                 return $spatieMedia->usingFileName('main_image.jpg')
                                     ->withResponsiveImages();
             }
@@ -100,7 +100,8 @@ CRUD::field('main_image')
 - `toMediaCollection()`, `setName()`, `usingName()`, `setOrder()`, `toMediaCollectionFromRemote()` and `toMediaLibrary()` will throw an error if you manually try to call any of those in the closure. 
 
 
-You can also have the collection configured in your model as explained in [Spatie Documentation](https://spatie.be/docs/laravel-medialibrary/v10/working-with-media-collections/defining-media-collections), in that case, you just need to pass the `collection` configuration key. But you are still able to configure all the other options including the `saving` callback.
+You can also have the collection configured in your model as explained in [Spatie Documentation](https://spatie.be/docs/laravel-medialibrary/v10/working-with-media-collections/defining-media-collections), in that case, you just need to pass the `collection` configuration key. But you are still able to configure all the other options including the `whenSaving` callback.
+
 ```php
 // In your Model.php
 

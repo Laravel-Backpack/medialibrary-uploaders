@@ -1,16 +1,16 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads;
+namespace Backpack\MediaLibraryUploads\Fields;
 
-class RepeatableUploads extends MediaField
+class RepeatableField extends MediaField
 {
     public $repeatableUploads;
 
     public $fieldName;
 
-    public function __construct(string $fieldName)
-    {   
-        $this->fieldName = $fieldName;
+    public function __construct(array $field)
+    {
+        $this->fieldName = $field['name'];
     }
 
     public function get($entry)
@@ -18,15 +18,16 @@ class RepeatableUploads extends MediaField
         return $this->getForDisplay($entry);
     }
 
-    public static function name(string $name): self
+    public static function name(array $field): self
     {
-        return new static($name);
+        return new static($field);
     }
 
     public function uploads(...$uploads)
     {
         foreach ($uploads as $upload) {
-            if (! is_a($upload, \Backpack\MediaLibraryUploads\MediaField::class)) {
+            if (! is_a($upload, \Backpack\MediaLibraryUploads\Fields\MediaField::class)) {
+                dd($upload);
                 throw new \Exception('Uploads must be an instance of MediaField');
             }
             $this->repeatableUploads[] = $upload->repeats($this->fieldName);
@@ -47,7 +48,7 @@ class RepeatableUploads extends MediaField
                 return $item;
             });
         }
-   
+
         return $values;
     }
 

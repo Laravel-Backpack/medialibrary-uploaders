@@ -1,8 +1,9 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads;
+namespace Backpack\MediaLibraryUploads\Fields;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
+use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
 
 class UploadMultipleField extends MediaField
@@ -30,10 +31,8 @@ class UploadMultipleField extends MediaField
 
         foreach ($value ?? [] as $file) {
             if ($file && is_file($file)) {
-
                 $media = $this->addMediaFile($entry, $file);
-                
-                /** @var \Spatie\MediaLibrary\MediaCollections\FileAdder $constrainedMedia */
+
                 $constrainedMedia = new ConstrainedFileAdder(null);
                 $constrainedMedia->setFileAdder($media);
 
@@ -58,11 +57,9 @@ class UploadMultipleField extends MediaField
         foreach ($value as $row => $rowValue) {
             foreach ($rowValue[$this->fieldName] ?? [] as $file) {
                 if ($file && is_file($file)) {
-
                     $media = $this->addMediaFile($entry, $file);
                     $media = $media->setOrder($row);
-                    
-                    /** @var \Spatie\MediaLibrary\MediaCollections\FileAdder $constrainedMedia */
+
                     $constrainedMedia = new ConstrainedFileAdder(null);
                     $constrainedMedia->setFileAdder($media);
 
