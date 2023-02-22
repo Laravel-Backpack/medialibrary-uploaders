@@ -30,7 +30,7 @@ class RegisterMediaLibraryEvents
     {
         foreach ($fields as $field) {
             $model::saving(function ($entry) use ($field) {
-                if (is_a($field, \Backpack\MediaLibraryUploads\RepeatableField::class)) {
+                if (is_a($field, \Backpack\MediaLibraryUploads\Fields\RepeatableField::class)) {
                     $entry->{$field->fieldName} = json_encode($field->save($entry));
                 } else {
                     $field->save($entry);
