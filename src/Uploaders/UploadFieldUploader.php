@@ -1,6 +1,6 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads\Fields;
+namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;

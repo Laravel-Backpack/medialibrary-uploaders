@@ -1,13 +1,13 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads\Fields;
+namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class ImageField extends MediaField
+class MediaImageFieldUploader extends MediaUploader
 {
     public function save(Model $entry, $value = null)
     {
@@ -31,19 +31,7 @@ class ImageField extends MediaField
                 $previousImage->delete();
             }
 
-            $extension = Str::after(mime_content_type($value), 'image/');
-
-            $media = $this->addMediaFileFromBase64($entry, $value, $extension);
-
-            /** @var \Spatie\MediaLibrary\MediaCollections\FileAdder $constrainedMedia */
-            $constrainedMedia = new ConstrainedFileAdder(null);
-            $constrainedMedia->setFileAdder($media);
-
-            if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-                $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
-            }
-
-            $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
+            $this->addMediaFile($entry, $value);
         }
     }
 
@@ -54,19 +42,8 @@ class ImageField extends MediaField
         foreach ($value as $row => $rowValue) {
             if ($rowValue) {
                 if (Str::startsWith($rowValue, 'data:image')) {
-                    $extension = Str::after(mime_content_type($rowValue), 'image/');
 
-                    $media = $this->addMediaFileFromBase64($entry, $rowValue, $extension);
-                    $media = $media->setOrder($row);
-
-                    $constrainedMedia = new ConstrainedFileAdder(null);
-                    $constrainedMedia->setFileAdder($media);
-
-                    if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-                        $constrainedMedia = call_user_func_array($this->savingEventCallback, [&$constrainedMedia, $this]);
-                    }
-
-                    $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
+                    $this->addMediaFile($entry, $rowValue, $row);
 
                     continue;
                 }

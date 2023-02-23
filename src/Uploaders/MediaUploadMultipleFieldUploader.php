@@ -1,16 +1,31 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads\Fields;
+namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
-class UploadMultipleField extends MediaField
+class MediaUploadMultipleFieldUploader extends MediaUploader
 {
+    public static function for(array $field, $configuration): self
+    {
+        return (new static($field, $configuration))->multiple();
+    }
+
     public function save(Model $entry, $value = null)
     {
         return $this->isRepeatable ? $this->saveRepeatableUploadMultiple($entry, $value) : $this->saveUploadMultiple($entry, $value);
+    }
+
+    public function getForDisplay($entry)
+    {
+        $media = $this->get($entry);
+
+        return $media->map(function ($media) {
+            return $media->getUrl();
+        })->toArray();
     }
 
     private function saveUploadMultiple($entry, $value = null): void
@@ -31,16 +46,7 @@ class UploadMultipleField extends MediaField
 
         foreach ($value ?? [] as $file) {
             if ($file && is_file($file)) {
-                $media = $this->addMediaFile($entry, $file);
-
-                $constrainedMedia = new ConstrainedFileAdder(null);
-                $constrainedMedia->setFileAdder($media);
-
-                if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-                    $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
-                }
-
-                $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
+                $this->addMediaFile($entry, $file);
             }
         }
     }
@@ -57,22 +63,17 @@ class UploadMultipleField extends MediaField
         foreach ($value as $row => $rowValue) {
             foreach ($rowValue[$this->fieldName] ?? [] as $file) {
                 if ($file && is_file($file)) {
-                    $media = $this->addMediaFile($entry, $file);
-                    $media = $media->setOrder($row);
-
-                    $constrainedMedia = new ConstrainedFileAdder(null);
-                    $constrainedMedia->setFileAdder($media);
-
-                    if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-                        $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
-                    }
-
-                    $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
+                    $this->addMediaFile($entry, $file, $row);
                 }
             }
         }
 
         foreach ($previousFiles as $file) {
+            if (empty($fileOrder)) {
+                $file->delete();
+                continue;
+            }
+
             if (in_array($file->getUrl(), $filesToDelete)) {
                 $file->delete();
 
@@ -81,7 +82,11 @@ class UploadMultipleField extends MediaField
 
             foreach ($fileOrder as $row => $files) {
                 if (is_array($files)) {
+                    $files = array_map(function ($item) {
+                        return Str::after($item, url(''));
+                    }, $files);
                     $key = array_search($file->getUrl(), $files, true);
+
                     if ($key !== false) {
                         $file->order_column = $row;
                         $file->save();
@@ -89,8 +94,11 @@ class UploadMultipleField extends MediaField
                         unset($fileOrder[$row][$key]);
                     }
                 }
+                if (empty($fileOrder[$row])) {
+                    unset($fileOrder[$row]);
+                }
             }
-        }
+        } 
     }
 
     private function getFromRequestAsArray(string $key, $delimiter = null): array
@@ -117,15 +125,6 @@ class UploadMultipleField extends MediaField
             })->toArray();
 
             return [$this->fieldName => $items];
-        })->toArray();
-    }
-
-    public function getForDisplay($entry)
-    {
-        $media = $this->get($entry);
-
-        return $media->map(function ($media) {
-            return $media->getUrl();
         })->toArray();
     }
 }

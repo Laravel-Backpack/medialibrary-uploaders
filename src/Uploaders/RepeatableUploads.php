@@ -1,12 +1,12 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads\Fields;
+namespace Backpack\MediaLibraryUploads\Uploaders;
 
-class RepeatableField extends MediaField
+use Illuminate\Database\Eloquent\Model;
+
+class RepeatableUploads extends Uploader
 {
     public $repeatableUploads;
-
-    public $fieldName;
 
     public function __construct(array $field)
     {
@@ -18,17 +18,11 @@ class RepeatableField extends MediaField
         return $this->getForDisplay($entry);
     }
 
-    public static function name(array $field): self
-    {
-        return new static($field);
-    }
-
     public function uploads(...$uploads)
     {
         foreach ($uploads as $upload) {
-            if (! is_a($upload, \Backpack\MediaLibraryUploads\Fields\MediaField::class)) {
-                dd($upload);
-                throw new \Exception('Uploads must be an instance of MediaField');
+            if (! is_a($upload, \Backpack\MediaLibraryUploads\Uploaders\Uploader::class)) {
+                throw new \Exception('Uploads must be an instance of Uploader class.');
             }
             $this->repeatableUploads[] = $upload->repeats($this->fieldName);
         }
@@ -36,10 +30,10 @@ class RepeatableField extends MediaField
         return $this;
     }
 
-    public function save($entry, $value = null)
+    public function save(Model $entry, $value = null)
     {
-        $values = collect(request()->get($this->fieldName));
-        foreach ($this->repeatableUploads as $upload) {
+        $values = collect(request()->get(self::$fieldName));
+        foreach (self::$repeatableUploads as $upload) {
             $upload->save($entry, $values->pluck($upload->fieldName)->toArray());
 
             $values->transform(function ($item) use ($upload) {
@@ -54,7 +48,7 @@ class RepeatableField extends MediaField
 
     public function getForDisplay($entry)
     {
-        $values = $entry->{$this->fieldName} ?? [];
+        $values = $entry->{self::$fieldName} ?? [];
 
         if (! is_array($values)) {
             $values = json_decode($values, true);
