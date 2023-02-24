@@ -38,17 +38,13 @@ composer require backpack/media-library-uploads
 
 ## Usage
 
-You should setup the regular field in your CRUD controller, and then tell Backpack that the upload should be done through Spatie Media Library by adding `->withMedia()` to your field definition:
+On any field where you upload a file (eg. `upload`, `upload_multiple`, `image`, `base64_image`), add `withMedia()` to your field definition, in order to tell Backpack to store those uploaded files using Spatie's Laravel MediaLibrary. For example:
 
 ```php
-CRUD::field('main_image')
-        ->label('Main Image')
-        ->type('image')
-        ->withMedia();
-
+CRUD::field('avatar')->type('image')->withMedia();
 ```
 
-For repeatable fields you should add `->withMedia()` to the repeatable field (the parent), and then in the subfields, you should mark each field that should be handled by Media Library with `'withMedia' => true`.
+For repeatable fields you should add `->withMedia()` to the repeatable field (the parent), but also in each subfields that should be handled by Media Library, you should mark that field with `'withMedia' => true`.
 
 ```php
 CRUD::field('gallery')
