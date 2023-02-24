@@ -1,61 +1,50 @@
-# MediaLibraryConnector
+# Media Functionality for Backpack CRUD fields
 
 [![Latest Version on Packagist][ico-version]][link-packagist]
 [![Total Downloads][ico-downloads]][link-downloads]
 [![The Whole Fruit Manifesto](https://img.shields.io/badge/writing%20standard-the%20whole%20fruit-brightgreen)](https://github.com/the-whole-fruit/manifesto)
 
-##### Upload files using Spatie Media Library with Backpack fields.
+If you project uses both [Spatie Media Library](https://github.com/spatie/laravel-medialibrary) and [Backpack for Laravel](https://backpackforlaravel.com/), this package adds the ability for Backpack fields to easily store uploaded files as media (by using Spatie Media Library). More exactly, it provides some helper classes that will handle the file upload and retrieval. You'll love how simple it makes it to do uploads.
 
-This package provides the ability to store files in projects that use the [Backpack for Laravel](https://backpackforlaravel.com/) administration panel with [Spatie Media Library](https://github.com/spatie/laravel-medialibrary). 
+## Requirements
 
-More exactly, it provides some helper classes that will handle the file uploads and retrieve them back to use on the UI.
+**Install and use `spatie/laravel-medialibrary` v10**. If you haven't already, please make sure you've installed `spatie/laravel-medialibrary` and followed all installation steps in [their docs](https://spatie.be/docs/laravel-medialibrary/v10/installation-setup):
 
+``` bash
+# require the package
+composer require backpack/media-library-uploads
 
-## Screenshots
+# prepare the database
+# NOTE: Spatie migration does not come with a `down()` method by default, add one now if you need it
+php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="migrations"
 
-> **// TODO: add a screenshot and delete these lines;** 
-> to add a screenshot to a github markdown file, the easiest way is to
-> open an issue, upload the screenshot there with drag&drop, then close the issue;
-> you now have that image hosted on Github's servers; so you can then right-click 
-> the image to copy its URL, and use that URL wherever you want (for example... here)
+# run the migration
+php artisan migrate
 
-![Backpack Toggle Field Addon](https://via.placeholder.com/600x250?text=screenshot+needed)
+# (optionally) publish the config file
+php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="config"
 
+```
+
+Then prepare your Models to use `spatie/laravel-medialibrary`, by adding the `InteractsWithMedia` trait to your model and implement the `HasMedia` interface like explained on [Media Library Documentation](https://spatie.be/docs/laravel-medialibrary/v10/basic-usage/preparing-your-model).
 
 ## Installation
 
-#### 1. Install the package
+Just require this package using Composer, that's it:
+
 ``` bash
 composer require backpack/media-library-uploads
 ```
-#### 2. Publish the config file
-```bash
-php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="config"
-```
-
-#### 3. Publish&Run the migrations
-```bash
-php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="migrations"
-
-# NOTE: Spatie migration does not come with a `down()` method by default, add one if you need it before migrating.
-php artisan migrate
-```
-
-Prepare the Model/Models where you plan to use the media funcionality. Basically add the `InteractsWithMedia` trait to your model and implement the `HasMedia` interface like explained on [Media Library Documentation](https://spatie.be/docs/laravel-medialibrary/v10/basic-usage/preparing-your-model).
 
 ## Usage
 
-You should setup the regular field in your CRUD controller, and then tell Backpack that the upload should be done through Spatie Media Library by adding `->withMedia()` to your field definition:
+On any field where you upload a file (eg. `upload`, `upload_multiple`, `image`, `base64_image`), add `withMedia()` to your field definition, in order to tell Backpack to store those uploaded files using Spatie's Laravel MediaLibrary. For example:
 
 ```php
-CRUD::field('main_image')
-        ->label('Main Image')
-        ->type('image')
-        ->withMedia();
-
+CRUD::field('avatar')->type('image')->withMedia();
 ```
 
-For repeatable fields you should add `->withMedia()` to the repeatable field (the parent), and then in the subfields, you should mark each field that should be handled by Media Library with `'withMedia' => true`.
+For repeatable fields you should add `->withMedia()` to the repeatable field (the parent), but also in each subfields that should be handled by Media Library, you should mark that field with `'withMedia' => true`.
 
 ```php
 CRUD::field('gallery')
@@ -72,33 +61,42 @@ CRUD::field('gallery')
         ->withMedia(); 
 ```
 
-## Configuration
+## Advanced Use
 
-Backpack sets up some handy defaults for you when handling the media, and provide you the way to customize the bits you need from Spatie Media Library.
+### Overriding the defaults
 
-You can do so by passing an array to `->withMedia([])` or `'withMedia' => []`.
+Backpack sets up some handy defaults for you when handling the media. But it also provides you a way to customize the bits you need from Spatie Media Library. You can pass a configuration array to `->withMedia([])` or `'withMedia' => []` to override the defaults Backpack has set:
 
 ```php
 CRUD::field('main_image')
         ->label('Main Image')
         ->type('image')
         ->withMedia([
-            'collection' => 'my_collection', // uses the spatie default that is `default`
-            'disk' => 'my_disk', // uses by default the disk configured in spatie config file
-            'mediaName' => 'custom_media_name' // by default it will be the field name
+            'collection' => 'my_collection', // default: the spatie config default
+            'disk' => 'my_disk', // default: the spatie config default
+            'mediaName' => 'custom_media_name' // default: the field name
+        ]);
+```
 
-            // this callback will be called in the middle of media library collection config. 
-            // that means that Backpack will call the initializer function, and give you the object here
-            // for you to configure, you then `return` it back to Backpack and we call the termination method. Sounds good?
+### Customizing the saving process (adding thumbnails, etc)
+
+Inside the same configuration array mentioned above, you can use the `whenSaving` closure to customize the saving process. This closure will be called in THE MIDDLE of configuring the media collection. So AFTER calling the initializer function, but BEFORE calling toMediaCollection(). Do what you want to the $spatieMedia object, using Spatie's documented methods, then `return` it back to Backpack to call the termination method. Sounds good?
+
+```php
+CRUD::field('main_image')
+        ->label('Main Image')
+        ->type('image')
+        ->withMedia([
             'whenSaving' => function($spatieMedia, $backpackMediaObject) {
                 return $spatieMedia->usingFileName('main_image.jpg')
                                     ->withResponsiveImages();
             }
         ]);
 ```
-**NOTE:** Some methods will be called automatically by Backpack and you shoudn't call them inside the closure used for configuration.
-- `toMediaCollection()`, `setName()`, `usingName()`, `setOrder()`, `toMediaCollectionFromRemote()` and `toMediaLibrary()` will throw an error if you manually try to call any of those in the closure. 
 
+**NOTE:** Some methods will be called automatically by Backpack; You shoudn't call them inside the closure used for configuration: `toMediaCollection()`, `setName()`, `usingName()`, `setOrder()`, `toMediaCollectionFromRemote()` and `toMediaLibrary()`. They will throw an error if you manually try to call them in the closure. 
+
+### Defining media collection in the model
 
 You can also have the collection configured in your model as explained in [Spatie Documentation](https://spatie.be/docs/laravel-medialibrary/v10/working-with-media-collections/defining-media-collections), in that case, you just need to pass the `collection` configuration key. But you are still able to configure all the other options including the `whenSaving` callback.
 
@@ -119,7 +117,6 @@ CRUD::field('main_image')
             'collection' => 'product_images', // will pick the collection definition from your model
         ]);
 ```
-## Overwriting
 
 
 ## Change log
@@ -142,14 +139,14 @@ If you discover any security related issues, please email hello@backpackforlarav
 
 ## Credits
 
-- [Tabacitu][link-author]
+- [Pedro Martins](https://github.com/pxpm/) - author & architect
+- [Cristian Tabacitu](https://github.com/tabacitu) - reviewer
+- [Backpack for Laravel](https://github.com/laravel-backpack) - sponsor
 - [All Contributors][link-contributors]
 
 ## License
 
 This project was released under MIT, so you can install it on top of any Backpack & Laravel project. Please see the [license file](license.md) for more information. 
-
-However, please note that you do need Backpack installed, so you need to also abide by its [YUMMY License](https://github.com/Laravel-Backpack/CRUD/blob/master/LICENSE.md). That means in production you'll need a Backpack license code. You can get a free one for non-commercial use (or a paid one for commercial use) on [backpackforlaravel.com](https://backpackforlaravel.com).
 
 
 [ico-version]: https://img.shields.io/packagist/v/backpack/media-library-connector.svg?style=flat-square
