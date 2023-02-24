@@ -61,7 +61,9 @@ CRUD::field('gallery')
         ->withMedia(); 
 ```
 
-## Configuration & Advanced Use
+## Advanced Use
+
+### Overriding the defaults
 
 Backpack sets up some handy defaults for you when handling the media. But it also provides you a way to customize the bits you need from Spatie Media Library. You can pass a configuration array to `->withMedia([])` or `'withMedia' => []` to override the defaults Backpack has set:
 
@@ -84,8 +86,26 @@ CRUD::field('main_image')
             }
         ]);
 ```
+
+### Customizing the saving process (adding thumbnails, etc)
+
+Inside the same configuration array mentioned above, you can use the `whenSaving` closure to customize the saving process. This closure will be called in THE MIDDLE of configuring the media collection. So AFTER calling the initializer function, but BEFORE calling toMediaCollection(). Do what you want to the $spatieMedia object, using Spatie's documented methods, then `return` it back to Backpack to call the termination method. Sounds good?
+
+```php
+CRUD::field('main_image')
+        ->label('Main Image')
+        ->type('image')
+        ->withMedia([
+            'whenSaving' => function($spatieMedia, $backpackMediaObject) {
+                return $spatieMedia->usingFileName('main_image.jpg')
+                                    ->withResponsiveImages();
+            }
+        ]);
+```
+
 **NOTE:** Some methods will be called automatically by Backpack; You shoudn't call them inside the closure used for configuration: `toMediaCollection()`, `setName()`, `usingName()`, `setOrder()`, `toMediaCollectionFromRemote()` and `toMediaLibrary()`. They will throw an error if you manually try to call them in the closure. 
 
+### Defining media collection in the model
 
 You can also have the collection configured in your model as explained in [Spatie Documentation](https://spatie.be/docs/laravel-medialibrary/v10/working-with-media-collections/defining-media-collections), in that case, you just need to pass the `collection` configuration key. But you are still able to configure all the other options including the `whenSaving` callback.
 
