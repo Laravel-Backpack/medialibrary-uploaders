@@ -75,15 +75,6 @@ CRUD::field('main_image')
             'collection' => 'my_collection', // default: the spatie config default
             'disk' => 'my_disk', // default: the spatie config default
             'mediaName' => 'custom_media_name' // default: the field name
-
-            // This callback will be called in THE MIDDLE of configuring the media collection. 
-            // So AFTER calling the initializer function, but BEFORE calling toMediaCollection().
-            // Do what you want to the $spatieMedia object, using Spatie's documented methods.
-            // Then `return` it back to Backpack to call the termination method. Sounds good?
-            'whenSaving' => function($spatieMedia, $backpackMediaObject) {
-                return $spatieMedia->usingFileName('main_image.jpg')
-                                    ->withResponsiveImages();
-            }
         ]);
 ```
 
