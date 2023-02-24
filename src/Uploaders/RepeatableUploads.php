@@ -2,9 +2,10 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
+use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
 use Illuminate\Database\Eloquent\Model;
 
-class RepeatableUploads extends Uploader
+class RepeatableUploads extends Uploader implements RepeatableUploaderInterface
 {
     public $repeatableUploads;
 
@@ -18,10 +19,10 @@ class RepeatableUploads extends Uploader
         return $this->getForDisplay($entry);
     }
 
-    public function uploads(...$uploads)
+    public function uploads(...$uploads): self
     {
         foreach ($uploads as $upload) {
-            if (! is_a($upload, \Backpack\MediaLibraryUploads\Uploaders\Uploader::class)) {
+            if (! is_a($upload, \Backpack\MediaLibraryUploads\Interfaces\UploaderInterface::class)) {
                 throw new \Exception('Uploads must be an instance of Uploader class.');
             }
             $this->repeatableUploads[] = $upload->repeats($this->fieldName);

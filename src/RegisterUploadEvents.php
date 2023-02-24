@@ -6,15 +6,19 @@ use Backpack\MediaLibraryUploads\Uploaders\MediaImageFieldUploader;
 use Backpack\MediaLibraryUploads\Uploaders\MediaRepeatableUploads;
 use Backpack\MediaLibraryUploads\Uploaders\MediaUploadFieldUploader;
 use Backpack\MediaLibraryUploads\Uploaders\MediaUploadMultipleFieldUploader;
+use Exception;
 
 class RegisterUploadEvents
 {
-    public static function handle($field, $mediaDefinition): void
+    private static $defaultUploaders = [];
+
+    public static function handle($field, $mediaDefinition, $defaultUploaders = []): void
     {
+        self::$defaultUploaders = $defaultUploaders;
+
         $attributes = $field->getAttributes();
 
         $attributes['eventsModel'] = $attributes['model'] ?? get_class($field->crud()->getModel());
-        $attributes['mediaName'] = $attributes['name'];
 
         if (! isset($attributes['subfields'])) {
             $mediaType = self::getUploaderFromField($attributes, $mediaDefinition ?? []);
@@ -46,7 +50,6 @@ class RegisterUploadEvents
         foreach ($field['subfields'] as $subfield) {
             if (isset($subfield['withMedia'])) {
                 $subfield['eventsModel'] = $subfield['baseModel'] ?? $field['eventsModel'];
-                $subfield['mediaName'] = $subfield['name'];
 
                 $subfieldMediaDefinition = $subfield['withMedia'];
 
@@ -73,21 +76,10 @@ class RegisterUploadEvents
             return $mediaDefinition['uploaderType']::for($field, $mediaDefinition);
         }
 
-        switch($field['type']) {
-            case 'image':
-                return MediaImageFieldUploader::for($field, $mediaDefinition);
-                break;
-            case 'upload':
-                return MediaUploadFieldUploader::for($field, $mediaDefinition);
-                break;
-            case 'upload_multiple':
-                return MediaUploadMultipleFieldUploader::for($field, $mediaDefinition);
-                break;
-            case 'repeatable':
-                return MediaRepeatableUploads::for($field, $mediaDefinition);
-                break;
-            default:
-                throw new \Exception('Unknow uploader type for field '.$field['name'].' with type: '.$field['type'].' .');
+        if(isset(self::$defaultUploaders[$field['type']])) {
+            return self::$defaultUploaders[$field['type']]::for($field, $mediaDefinition);
         }
+
+        throw new Exception('Undefined upload type for field type: ' . $field['type']);
     }
 }

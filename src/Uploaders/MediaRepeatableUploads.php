@@ -4,8 +4,9 @@ namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Illuminate\Database\Eloquent\Model;
 use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
+use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
 
-class MediaRepeatableUploads extends MediaUploader
+class MediaRepeatableUploads extends MediaUploader implements RepeatableUploaderInterface
 {
     public $repeatableUploads;
 

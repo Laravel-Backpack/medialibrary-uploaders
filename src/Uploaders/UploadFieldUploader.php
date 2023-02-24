@@ -6,7 +6,7 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
 
-class UploadField extends MediaField
+class UploadFieldUploader extends Uploader
 {
     public function save(Model $entry, $value = null)
     {
@@ -64,6 +64,7 @@ class UploadField extends MediaField
     {
         $value = request()->file($this->fieldName);
 
+        dd($entry);
         $previousFile = $this->get($entry);
 
         if ($previousFile && ($value && is_file($value) || request()->has($this->fieldName))) {
