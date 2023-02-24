@@ -30,7 +30,7 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
         return $values;
     }
 
-    public function uploads(...$uploads)
+    public function uploads(...$uploads): self
     {
         foreach ($uploads as $upload) {
             if (! is_a($upload, UploaderInterface::class)) {

@@ -2,10 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads;
 
-use Backpack\MediaLibraryUploads\Uploaders\MediaImageFieldUploader;
 use Backpack\MediaLibraryUploads\Uploaders\MediaRepeatableUploads;
-use Backpack\MediaLibraryUploads\Uploaders\MediaUploadFieldUploader;
-use Backpack\MediaLibraryUploads\Uploaders\MediaUploadMultipleFieldUploader;
 use Exception;
 
 class RegisterUploadEvents
