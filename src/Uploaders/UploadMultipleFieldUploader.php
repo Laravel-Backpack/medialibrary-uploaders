@@ -3,11 +3,12 @@
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
-use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class UploadMultipleFieldUploader extends MediaUploader
+class UploadMultipleFieldUploader extends Uploader
 {
     public static function for(array $field, $configuration): self
     {
@@ -19,36 +20,37 @@ class UploadMultipleFieldUploader extends MediaUploader
         return $this->isRepeatable ? $this->saveRepeatableUploadMultiple($entry, $value) : $this->saveUploadMultiple($entry, $value);
     }
 
-    public function getForDisplay($entry)
-    {
-        $media = $this->get($entry);
-
-        return $media->map(function ($media) {
-            return $media->getUrl();
-        })->toArray();
-    }
-
-    private function saveUploadMultiple($entry, $value = null): void
+    private function saveUploadMultiple($entry, $value = null)
     {
         $filesToDelete = request()->get('clear_'.$this->fieldName);
 
         $value = request()->file($this->fieldName);
 
-        $previousFiles = $this->get($entry);
+        $previousFiles = $entry->getOriginal($this->fieldName) ?? [];
 
         if ($filesToDelete) {
             foreach ($previousFiles as $previousFile) {
-                if (in_array($previousFile->getUrl(), $filesToDelete)) {
-                    $previousFile->delete();
+                if (in_array($previousFile, $filesToDelete)) {
+                    Storage::disk($this->disk)->delete($previousFile);
+
+                    $previousFiles = Arr::where($previousFiles, function ($value, $key) use ($previousFile) {
+                        return $value != $previousFile;
+                    });
                 }
             }
         }
 
         foreach ($value ?? [] as $file) {
             if ($file && is_file($file)) {
-                $this->addMediaFile($entry, $file);
+                $finalPath = $this->path.$this->getFileName($file).'.'.$this->getExtensionFromFile($file);
+
+                Storage::disk($this->disk)->put($finalPath, $file);
+
+                $previousFiles[] = $finalPath;
             }
         }
+
+        return $previousFiles;
     }
 
     private function saveRepeatableUploadMultiple($entry): void
@@ -71,6 +73,7 @@ class UploadMultipleFieldUploader extends MediaUploader
         foreach ($previousFiles as $file) {
             if (empty($fileOrder)) {
                 $file->delete();
+
                 continue;
             }
 
@@ -98,7 +101,7 @@ class UploadMultipleFieldUploader extends MediaUploader
                     unset($fileOrder[$row]);
                 }
             }
-        } 
+        }
     }
 
     private function getFromRequestAsArray(string $key, $delimiter = null): array

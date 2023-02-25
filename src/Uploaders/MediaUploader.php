@@ -2,10 +2,9 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
+use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
-use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 
 abstract class MediaUploader extends Uploader
 {
@@ -28,7 +27,7 @@ abstract class MediaUploader extends Uploader
                                     })
                                     ->first();
         }
-        
+
         $this->eventsModel = $field['eventsModel'];
         $this->disk = $modelDefinition?->diskName ?? $configuration['disk'] ?? config('media-library.disk_name');
         $this->collection = $configuration['collection'] ?? 'default';
@@ -37,8 +36,6 @@ abstract class MediaUploader extends Uploader
     }
 
     abstract public function save(Model $entry, $value = null);
-
-    abstract public function getForDisplay(Model $entry);
 
     protected function getRepeatableItemsAsArray($entry)
     {
@@ -60,20 +57,15 @@ abstract class MediaUploader extends Uploader
         });
     }
 
-    public function getSavingEvent(Model $entry)
+    public function processFileUpload(Model $entry)
     {
         if (is_a($this, \Backpack\MediaLibraryUploads\Uploaders\MediaRepeatableUploads::class)) {
             $entry->{$this->fieldName} = json_encode($this->save($entry));
         } else {
             $this->save($entry);
-            $entry->offsetUnset($this->fieldName);  
+            $entry->offsetUnset($this->fieldName);
         }
-        return $entry;
-    }
 
-    public function getRetrievedEvent(Model $entry)
-    {
-        $entry->{$this->fieldName} = $this->getForDisplay($entry);
         return $entry;
     }
 
@@ -85,7 +77,7 @@ abstract class MediaUploader extends Uploader
         $fileAdder = $fileAdder->usingName($this->mediaName)
                                 ->usingFileName($this->getFileName($file).'.'.$extension);
 
-        if($order !== null) {
+        if ($order !== null) {
             $fileAdder->setOrder($order);
         }
 
@@ -99,8 +91,10 @@ abstract class MediaUploader extends Uploader
         $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
     }
 
-    private function getExtensionFromFile($file)
+    public function getForDisplay(Model $entry)
     {
-        return is_a($file, UploadedFile::class, true) ? $file->extension() : Str::after(mime_content_type($file), '/');
+        $item = $this->get($entry);
+
+        return $item ? $item->getUrl() : null;
     }
 }

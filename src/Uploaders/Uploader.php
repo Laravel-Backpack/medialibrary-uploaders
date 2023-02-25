@@ -2,8 +2,10 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
 abstract class Uploader implements UploaderInterface
@@ -24,30 +26,46 @@ abstract class Uploader implements UploaderInterface
 
     public $eventsModel;
 
+    public $path;
+
+    public $temporary;
+
+    public $expiration;
+
     public function __construct(array $field, $definition)
     {
         $this->fieldName = $field['name'];
         $this->disk = $definition['disk'] ?? config('backpack.base.root_disk_name');
         $this->savingEventCallback = $definition['whenSaving'] ?? null;
+        $this->temporary = $definition['temporary'] ?? false;
+        $this->expiration = $definition['expiration'] ?? 1;
+        $this->path = $definition['path'] ?? '';
+        if (! empty($this->path) && ! Str::endsWith($this->path, '/')) {
+            $this->path = $this->path.'/';
+        }
     }
 
     abstract public function save(Model $entry, $value = null);
 
-    abstract public function getForDisplay(Model $entry);
-
-    public function getSavingEvent(Model $entry)
+    public function processFileUpload(Model $entry)
     {
         if (is_a($this, \Backpack\MediaLibraryUploads\Uploaders\RepeatableUploads::class)) {
             $entry->{$this->fieldName} = json_encode($this->save($entry));
         } else {
-            $this->save($entry);
-            $entry->offsetUnset($this->fieldName);
+            $entry->{$this->fieldName} = $this->save($entry);
         }
+
+        return $entry;
     }
 
-    public function getRetrievedEvent(Model $entry)
+    public function retrieveUploadedFile(Model $entry)
     {
-        $entry->{$this->fieldName} = $this->getForDisplay($entry);
+        $crudField = CrudPanelFacade::field($this->fieldName)->disk($this->disk)->prefix($this->path);
+        if ($this->temporary) {
+            $crudField->temporary($this->temporary)->expiration($this->expiration);
+        }
+
+        return $entry;
     }
 
     public static function for(array $field, $definition): self
@@ -74,7 +92,7 @@ abstract class Uploader implements UploaderInterface
     protected function getFileName($file)
     {
         if (is_file($file)) {
-            return Str::of($this->fileName ?? Str::beforeLast($file->getClientOriginalName(), '.'))->slug();
+            return Str::of($this->fileName ?? Str::beforeLast($file->getClientOriginalName(), '.'))->append('-'.Str::random(4))->slug();
         }
 
         return Str::of($this->fileName ?? Str::random(40))->slug();
@@ -83,5 +101,10 @@ abstract class Uploader implements UploaderInterface
     protected function modelInstance()
     {
         return new $this->eventsModel;
+    }
+
+    protected function getExtensionFromFile($file)
+    {
+        return is_a($file, UploadedFile::class, true) ? $file->extension() : Str::after(mime_content_type($file), '/');
     }
 }

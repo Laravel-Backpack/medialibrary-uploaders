@@ -27,17 +27,15 @@ class RegisterUploadEvents
         self::handleRepeatableUploads($attributes, $mediaDefinition ?? []);
     }
 
-    private static function setupModelEvents($model, ...$fields): void
+    private static function setupModelEvents($model, $field): void
     {
-        foreach ($fields as $field) {
-            $model::saving(function ($entry) use ($field) {
-                $entry = $field->getSavingEvent($entry);
-            });
+        $model::saving(function ($entry) use ($field) {
+            $entry = $field->processFileUpload($entry);
+        });
 
-            $model::retrieved(function ($entry) use ($field) {
-                $entry = $field->getRetrievedEvent($entry);
-            });
-        }
+        $model::retrieved(function ($entry) use ($field) {
+            $entry = $field->retrieveUploadedFile($entry);
+        });
     }
 
     private static function handleRepeatableUploads($field, $mediaDefinition)
@@ -53,7 +51,7 @@ class RegisterUploadEvents
                 $subfieldMediaDefinition = is_array($subfieldMediaDefinition) ?
                                                 array_merge($mediaDefinition, $subfieldMediaDefinition) :
                                                 $mediaDefinition;
-    
+
                 $mediaType = static::getUploaderFromField($subfield, $subfieldMediaDefinition);
 
                 $repeatableDefinitions[$subfield['eventsModel']][] = $mediaType;
@@ -73,10 +71,10 @@ class RegisterUploadEvents
             return $mediaDefinition['uploaderType']::for($field, $mediaDefinition);
         }
 
-        if(isset(self::$defaultUploaders[$field['type']])) {
+        if (isset(self::$defaultUploaders[$field['type']])) {
             return self::$defaultUploaders[$field['type']]::for($field, $mediaDefinition);
         }
 
-        throw new Exception('Undefined upload type for field type: ' . $field['type']);
+        throw new Exception('Undefined upload type for field type: '.$field['type']);
     }
 }

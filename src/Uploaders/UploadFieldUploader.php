@@ -5,6 +5,7 @@ namespace Backpack\MediaLibraryUploads\Uploaders;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class UploadFieldUploader extends Uploader
 {
@@ -60,35 +61,30 @@ class UploadFieldUploader extends Uploader
         return $items;
     }
 
-    private function saveUpload($entry): void
+    private function saveUpload($entry)
     {
-        $value = request()->file($this->fieldName);
+        $value = CrudPanelFacade::getRequest()->file($this->fieldName);
 
-        dd($entry);
-        $previousFile = $this->get($entry);
+        $previousFile = $entry->getOriginal($this->fieldName);
 
-        if ($previousFile && ($value && is_file($value) || request()->has($this->fieldName))) {
-            $previousFile->delete();
-        }
-
-        if (is_file($value)) {
-            $media = $this->addMediaFile($entry, $value);
-
-            $constrainedMedia = new ConstrainedFileAdder(null);
-            $constrainedMedia->setFileAdder($media);
-
-            if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-                $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
+        if ($value && is_file($value) && $value->isValid()) {
+            if ($previousFile) {
+                Storage::disk($this->disk)->delete($previousFile);
             }
 
-            $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
+            $finalPath = $this->path.$this->getFileName($value).'.'.$this->getExtensionFromFile($value);
+
+            Storage::disk($this->disk)->put($finalPath, $value);
+
+            return $finalPath;
         }
-    }
 
-    public function getForDisplay($entry): ?string
-    {
-        $media = $this->get($entry);
+        if (! $value && CrudPanelFacade::getRequest()->has($this->fieldName) && $previousFile) {
+            Storage::disk($this->disk)->delete($previousFile);
 
-        return $media ? $media->getUrl() : null;
+            return null;
+        }
+
+        return $previousFile;
     }
 }

@@ -2,15 +2,16 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
-use Illuminate\Database\Eloquent\Model;
-use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
+use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
+use Illuminate\Database\Eloquent\Model;
 
 class MediaRepeatableUploads extends MediaUploader implements RepeatableUploaderInterface
 {
     public $repeatableUploads;
 
-    public function __construct($field) {
+    public function __construct($field)
+    {
         $this->fieldName = $field['name'];
     }
 
@@ -28,6 +29,11 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
         }
 
         return $values;
+    }
+
+    public static function for(array $field, $definition): self
+    {
+        return new static($field, $definition);
     }
 
     public function uploads(...$uploads): self

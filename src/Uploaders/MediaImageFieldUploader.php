@@ -71,15 +71,4 @@ class MediaImageFieldUploader extends MediaUploader
             }
         }
     }
-
-    public function getForDisplay(Model $entry): ?string
-    {
-        $image = $this->get($entry);
-
-        if ($image) {
-            return $image->getUrl();
-        }
-
-        return null;
-    }
 }

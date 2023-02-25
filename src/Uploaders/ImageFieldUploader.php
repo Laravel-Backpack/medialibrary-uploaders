@@ -4,6 +4,7 @@ namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ImageFieldUploader extends Uploader
@@ -13,25 +14,31 @@ class ImageFieldUploader extends Uploader
         return $this->isRepeatable ? $this->saveRepeatableImage($entry, $value) : $this->saveImage($entry, $value);
     }
 
-    private function saveImage($entry, $value = null): void
+    private function saveImage($entry, $value = null)
     {
         $value = $value ?? CrudPanelFacade::getRequest()->get($this->fieldName);
-
-        $previousImage = $this->get($entry);
+        $previousImage = $entry->getOriginal($this->fieldName);
 
         if (! $value && $previousImage) {
-            $previousImage->delete();
+            Storage::disk($this->disk)->delete($previousImage);
 
-            return;
+            return null;
         }
 
         if (Str::startsWith($value, 'data:image')) {
             if ($previousImage) {
-                $previousImage->delete();
+                Storage::disk($this->disk)->delete($previousImage);
             }
 
-            $this->addMediaFile($entry, $value);
+            $base64Image = Str::after($value, ';base64,');
+
+            $finalPath = $this->path.$this->getFileName($value).'.'.$this->getExtensionFromFile($value);
+            Storage::disk($this->disk)->put($finalPath, base64_decode($base64Image));
+
+            return $finalPath;
         }
+
+        return $previousImage;
     }
 
     private function saveRepeatableImage($entry, $value): void
@@ -41,7 +48,6 @@ class ImageFieldUploader extends Uploader
         foreach ($value as $row => $rowValue) {
             if ($rowValue) {
                 if (Str::startsWith($rowValue, 'data:image')) {
-
                     $this->addMediaFile($entry, $rowValue, $row);
 
                     continue;
@@ -69,16 +75,5 @@ class ImageFieldUploader extends Uploader
                 $image->delete();
             }
         }
-    }
-
-    public function getForDisplay(Model $entry): ?string
-    {
-        $image = $this->get($entry);
-
-        if ($image) {
-            return $image->getUrl();
-        }
-
-        return null;
     }
 }

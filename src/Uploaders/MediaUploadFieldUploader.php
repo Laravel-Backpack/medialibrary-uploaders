@@ -68,11 +68,4 @@ class MediaUploadFieldUploader extends MediaUploader
             $this->addMediaFile($entry, $value);
         }
     }
-
-    public function getForDisplay($entry): ?string
-    {
-        $media = $this->get($entry);
-
-        return $media ? $media->getUrl() : null;
-    }
 }
