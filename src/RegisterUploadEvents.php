@@ -2,7 +2,6 @@
 
 namespace Backpack\MediaLibraryUploads;
 
-use Backpack\MediaLibraryUploads\Uploaders\MediaRepeatableUploads;
 use Exception;
 
 class RegisterUploadEvents
@@ -43,10 +42,10 @@ class RegisterUploadEvents
         $repeatableDefinitions = [];
 
         foreach ($field['subfields'] as $subfield) {
-            if (isset($subfield['withMedia'])) {
+            if (isset($subfield['withMedia']) || isset($subfield['withUploads'])) {
                 $subfield['eventsModel'] = $subfield['baseModel'] ?? $field['eventsModel'];
 
-                $subfieldMediaDefinition = $subfield['withMedia'];
+                $subfieldMediaDefinition = $subfield['withUploads'] ?? $subfield['withMedia'];
 
                 $subfieldMediaDefinition = is_array($subfieldMediaDefinition) ?
                                                 array_merge($mediaDefinition, $subfieldMediaDefinition) :
@@ -59,7 +58,7 @@ class RegisterUploadEvents
         }
 
         foreach ($repeatableDefinitions as $model => $mediaTypes) {
-            $repeatableDefinition = MediaRepeatableUploads::for($field, [])->uploads(...$mediaTypes);
+            $repeatableDefinition = self::$defaultUploaders['repeatable']::for($field, [])->uploads(...$mediaTypes);
 
             static::setupModelEvents($model, $repeatableDefinition);
         }

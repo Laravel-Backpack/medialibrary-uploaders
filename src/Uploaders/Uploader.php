@@ -45,7 +45,7 @@ abstract class Uploader implements UploaderInterface
         }
     }
 
-    abstract public function save(Model $entry, $value = null);
+    abstract public function save(Model $entry, $values = null);
 
     public function processFileUpload(Model $entry)
     {
@@ -61,6 +61,7 @@ abstract class Uploader implements UploaderInterface
     public function retrieveUploadedFile(Model $entry)
     {
         $crudField = CrudPanelFacade::field($this->fieldName)->disk($this->disk)->prefix($this->path);
+
         if ($this->temporary) {
             $crudField->temporary($this->temporary)->expiration($this->expiration);
         }
@@ -92,7 +93,7 @@ abstract class Uploader implements UploaderInterface
     protected function getFileName($file)
     {
         if (is_file($file)) {
-            return Str::of($this->fileName ?? Str::beforeLast($file->getClientOriginalName(), '.'))->append('-'.Str::random(4))->slug();
+            return Str::of($this->fileName ?? Str::beforeLast($file->getClientOriginalName(), '.'))->slug()->append('-'.Str::random(4));
         }
 
         return Str::of($this->fileName ?? Str::random(40))->slug();
@@ -101,6 +102,16 @@ abstract class Uploader implements UploaderInterface
     protected function modelInstance()
     {
         return new $this->eventsModel;
+    }
+
+    protected function getPreviousRepeatableValues(Model $entry)
+    {
+        $previousValues = json_decode($entry->getOriginal($this->parentField), true);
+        if (! empty($previousValues)) {
+            $previousValues = array_column($previousValues, $this->fieldName);
+        }
+
+        return $previousValues ?? [];
     }
 
     protected function getExtensionFromFile($file)

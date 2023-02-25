@@ -3,7 +3,6 @@
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
-use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,40 +13,33 @@ class UploadFieldUploader extends Uploader
         return $this->isRepeatable ? $this->saveRepeatableUpload($entry, $value) : $this->saveUpload($entry, $value);
     }
 
-    private function saveRepeatableUpload($entry): void
+    private function saveRepeatableUpload($entry)
     {
         $values = CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
-        $filesToClear = $this->getFromRequestAsArray('_clear_');
+
         $orderedFiles = $this->getFromRequestAsArray('_order_');
-        $previousFiles = $this->get($entry);
+
+        $previousFiles = $this->getPreviousRepeatableValues($entry);
 
         foreach ($values as $row => $rowValue) {
             if (isset($rowValue[$this->fieldName]) && is_file($rowValue[$this->fieldName])) {
-                $media = $this->addMediaFile($entry, $rowValue[$this->fieldName]);
-                $media = $media->setOrder($row);
+                $finalPath = $this->path.$this->getFileName($rowValue[$this->fieldName]).'.'.$this->getExtensionFromFile($rowValue[$this->fieldName]);
 
-                /** @var \Spatie\MediaLibrary\MediaCollections\FileAdder $constrainedMedia */
-                $constrainedMedia = new ConstrainedFileAdder(null);
-                $constrainedMedia->setFileAdder($media);
+                Storage::disk($this->disk)->put($finalPath, $rowValue[$this->fieldName]);
+                $orderedFiles[$row] = $finalPath;
 
-                if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-                    $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
-                }
-
-                $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
+                continue;
             }
         }
 
-        foreach ($previousFiles as $previousFile) {
-            if (in_array($previousFile->getUrl(), $filesToClear)) {
-                $previousFile->delete();
-            }
-
-            if (in_array($previousFile->getUrl(), $orderedFiles)) {
-                $previousFile->order_column = array_search($previousFile->getUrl(), $orderedFiles);
-                $previousFile->save();
+        foreach ($previousFiles as $row => $file) {
+            if ($file && ! isset($orderedFiles[$row])) {
+                $orderedFiles[$row] = null;
+                Storage::disk($this->disk)->delete($file);
             }
         }
+
+        return $orderedFiles;
     }
 
     private function getFromRequestAsArray(string $key): array

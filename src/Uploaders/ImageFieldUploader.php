@@ -9,14 +9,14 @@ use Illuminate\Support\Str;
 
 class ImageFieldUploader extends Uploader
 {
-    public function save(Model $entry, $value = null)
+    public function save(Model $entry, $values = null)
     {
-        return $this->isRepeatable ? $this->saveRepeatableImage($entry, $value) : $this->saveImage($entry, $value);
+        return $this->isRepeatable ? $this->saveRepeatableImage($entry, $values) : $this->saveImage($entry, $values);
     }
 
-    private function saveImage($entry, $value = null)
+    private function saveImage($entry)
     {
-        $value = $value ?? CrudPanelFacade::getRequest()->get($this->fieldName);
+        $value = CrudPanelFacade::getRequest()->get($this->fieldName);
         $previousImage = $entry->getOriginal($this->fieldName);
 
         if (! $value && $previousImage) {
@@ -41,39 +41,33 @@ class ImageFieldUploader extends Uploader
         return $previousImage;
     }
 
-    private function saveRepeatableImage($entry, $value): void
+    private function saveRepeatableImage($entry, $values)
     {
-        $previousImages = $this->get($entry);
+        $previousImages = $this->getPreviousRepeatableValues($entry);
 
-        foreach ($value as $row => $rowValue) {
+        array_walk($previousImages, function (&$item) {
+            $item = Storage::disk($this->disk)->url($item);
+        });
+
+        foreach ($values as $row => $rowValue) {
             if ($rowValue) {
                 if (Str::startsWith($rowValue, 'data:image')) {
-                    $this->addMediaFile($entry, $rowValue, $row);
+                    $base64Image = Str::after($rowValue, ';base64,');
+                    $finalPath = $this->path.$this->getFileName($rowValue).'.'.$this->getExtensionFromFile($rowValue);
+                    Storage::disk($this->disk)->put($finalPath, base64_decode($base64Image));
+                    $values[$row] = $finalPath;
+                    $previousImages[] = $finalPath;
 
                     continue;
                 }
-
-                $filename = Str::afterLast($rowValue, '/');
-                $id = Str::afterLast(Str::beforeLast($rowValue, '/'), '/');
-
-                $value[$row] = $id.'/'.$filename;
-
-                $currentImage = $previousImages
-                    ->where('id', $id)->where('file_name', $filename)->first();
-
-                if ($currentImage && $currentImage->order_column !== $row) {
-                    $currentImage->order_column = $row;
-                    $currentImage->save();
-                }
             }
         }
 
-        foreach ($previousImages as $image) {
-            $mediaIdentifier = $image->id.'/'.$image->file_name;
-
-            if (! in_array($mediaIdentifier, $value)) {
-                $image->delete();
-            }
+        $imagesToDelete = array_diff($previousImages, $values);
+        foreach ($imagesToDelete as $image) {
+            Storage::disk($this->disk)->delete($image);
         }
+
+        return $values;
     }
 }

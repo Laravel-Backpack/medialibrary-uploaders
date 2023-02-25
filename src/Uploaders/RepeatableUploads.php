@@ -2,6 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
 use Illuminate\Database\Eloquent\Model;
 
@@ -33,12 +34,12 @@ class RepeatableUploads extends Uploader implements RepeatableUploaderInterface
 
     public function save(Model $entry, $value = null)
     {
-        $values = collect(request()->get(self::$fieldName));
-        foreach (self::$repeatableUploads as $upload) {
-            $upload->save($entry, $values->pluck($upload->fieldName)->toArray());
+        $values = collect(request()->get($this->fieldName));
+        foreach ($this->repeatableUploads as $upload) {
+            $uploadedValues = $upload->save($entry, $values->pluck($upload->fieldName)->toArray());
 
-            $values->transform(function ($item) use ($upload) {
-                unset($item[$upload->fieldName]);
+            $values = $values->map(function ($item, $key) use ($upload, $uploadedValues) {
+                $item[$upload->fieldName] = $uploadedValues[$key] ?? null;
 
                 return $item;
             });
@@ -47,19 +48,30 @@ class RepeatableUploads extends Uploader implements RepeatableUploaderInterface
         return $values;
     }
 
-    public function getForDisplay($entry)
+    public function retrieveUploadedFile(Model $entry)
     {
-        $values = $entry->{self::$fieldName} ?? [];
+        $crudField = CrudPanelFacade::field($this->fieldName);
 
-        if (! is_array($values)) {
-            $values = json_decode($values, true);
-        }
+        $subfields = collect($crudField->getAttributes()['subfields']);
+        $subfields = $subfields->map(function ($item) {
+            if (isset($item['withMedia']) || isset($item['withUploads'])) {
+                $uploader = array_filter($this->repeatableUploads, function ($item) {
+                    return $item->fieldName !== $this->fieldName;
+                })[0];
 
-        foreach ($this->repeatableUploads as $upload) {
-            $uploadValues = $upload->getRepeatableItemsAsArray($entry);
-            $values = array_merge_recursive_distinct($values, $uploadValues);
-        }
+                $item['disk'] = $uploader->disk;
+                $item['prefix'] = $uploader->path;
+                if ($uploader->temporary) {
+                    $item['temporary'] = $uploader->temporary;
+                    $item['expiration'] = $uploader->expiration;
+                }
+            }
 
-        return $values;
+            return $item;
+        });
+
+        $crudField->subfields($subfields->toArray());
+
+        return $entry;
     }
 }

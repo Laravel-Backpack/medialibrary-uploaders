@@ -6,7 +6,6 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class UploadMultipleFieldUploader extends Uploader
 {
@@ -53,55 +52,36 @@ class UploadMultipleFieldUploader extends Uploader
         return $previousFiles;
     }
 
-    private function saveRepeatableUploadMultiple($entry): void
+    private function saveRepeatableUploadMultiple($entry)
     {
-        $previousFiles = $this->get($entry);
+        $previousFiles = $this->getPreviousRepeatableValues($entry);
 
         $filesToDelete = collect($this->getFromRequestAsArray('clear_'))->flatten()->toArray();
         $fileOrder = $this->getFromRequestAsArray('_order_', ',');
 
-        $value = CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
+        $files = CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
 
-        foreach ($value as $row => $rowValue) {
+        foreach ($files as $row => $rowValue) {
             foreach ($rowValue[$this->fieldName] ?? [] as $file) {
                 if ($file && is_file($file)) {
-                    $this->addMediaFile($entry, $file, $row);
+                    $finalPath = $this->path.$this->getFileName($file).'.'.$this->getExtensionFromFile($file);
+
+                    Storage::disk($this->disk)->put($finalPath, $file);
+                    $fileOrder[$row][] = $finalPath;
                 }
             }
         }
 
-        foreach ($previousFiles as $file) {
-            if (empty($fileOrder)) {
-                $file->delete();
-
-                continue;
-            }
-
-            if (in_array($file->getUrl(), $filesToDelete)) {
-                $file->delete();
-
-                continue;
-            }
-
-            foreach ($fileOrder as $row => $files) {
-                if (is_array($files)) {
-                    $files = array_map(function ($item) {
-                        return Str::after($item, url(''));
-                    }, $files);
-                    $key = array_search($file->getUrl(), $files, true);
-
-                    if ($key !== false) {
-                        $file->order_column = $row;
-                        $file->save();
-                        // avoid checking the same file twice. This is a performance improvement.
-                        unset($fileOrder[$row][$key]);
-                    }
-                }
-                if (empty($fileOrder[$row])) {
-                    unset($fileOrder[$row]);
+        foreach ($previousFiles as $previousRow => $files) {
+            foreach ($files as $key => $file) {
+                $key = array_search($file, $fileOrder, true);
+                if ($key === false) {
+                    Storage::disk($this->disk)->delete($file);
                 }
             }
         }
+
+        return $fileOrder;
     }
 
     private function getFromRequestAsArray(string $key, $delimiter = null): array
