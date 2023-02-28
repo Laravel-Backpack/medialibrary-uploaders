@@ -38,7 +38,7 @@ composer require backpack/media-library-uploads
 
 ## Usage
 
-On any field where you upload a file (eg. `upload`, `upload_multiple`, `image`, `base64_image`), add `withMedia()` to your field definition, in order to tell Backpack to store those uploaded files using Spatie's Laravel MediaLibrary. For example:
+On any field where you upload a file (eg. `upload`, `upload_multiple`, `image`), add `withMedia()` to your field definition, in order to tell Backpack to store those uploaded files using Spatie's Laravel MediaLibrary. For example:
 
 ```php
 CRUD::field('avatar')->type('image')->withMedia();
