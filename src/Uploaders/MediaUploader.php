@@ -5,6 +5,7 @@ namespace Backpack\MediaLibraryUploads\Uploaders;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 
 abstract class MediaUploader extends Uploader
 {
@@ -14,7 +15,7 @@ abstract class MediaUploader extends Uploader
 
     public $eventsModel;
 
-    public $singleCollection;
+    public $displayConversions;
 
     public function __construct(array $field, array $configuration)
     {
@@ -28,19 +29,22 @@ abstract class MediaUploader extends Uploader
                                     ->first();
         }
 
+        $this->displayConversions = $configuration['displayConversions'] ?? [];
+        $this->displayConversions = (array)$this->displayConversions;
+
         $this->eventsModel = $field['eventsModel'];
         $this->disk = $modelDefinition?->diskName ?? $configuration['disk'] ?? config('media-library.disk_name');
         $this->collection = $configuration['collection'] ?? 'default';
         $this->mediaName = $configuration['name'] ?? $this->fieldName;
-        $this->singleCollection = $configuration['single'] ?? false;
+        $this->isMultiple = $configuration['single'] ?? false;
     }
 
     abstract public function save(Model $entry, $value = null);
 
-    protected function getRepeatableItemsAsArray($entry)
+    protected function getPreviousRepeatableValues(Model $entry)
     {
         return $this->get($entry)->transform(function ($item) {
-            return [$this->fieldName => $item->getUrl(), 'order_column' => $item->order_column];
+            return [$this->fieldName => $this->getMediaIdentifier($item), 'order_column' => $item->order_column];
         })->sortBy('order_column')->keyBy('order_column')->toArray();
     }
 
@@ -69,13 +73,25 @@ abstract class MediaUploader extends Uploader
         return $entry;
     }
 
+    public function retrieveUploadedFile(Model $entry)
+    {
+        $crudField = CrudPanelFacade::field($this->fieldName)->disk($this->disk)->prefix($this->path);
+
+        if ($this->temporary) {
+            $crudField->temporary($this->temporary)->expiration($this->expiration);
+        }
+
+        $entry->{$this->fieldName} = $this->getForDisplay($entry);
+
+        return $entry;
+    }
+
     protected function addMediaFile($entry, $file, $order = null)
     {
         $fileAdder = is_a($file, UploadedFile::class, true) ? $entry->addMedia($file) : $entry->addMediaFromBase64($file);
-        $extension = $this->getExtensionFromFile($file);
 
         $fileAdder = $fileAdder->usingName($this->mediaName)
-                                ->usingFileName($this->getFileName($file).'.'.$extension);
+                                ->usingFileName($this->getFileName($file).'.'.$this->getExtensionFromFile($file));
 
         if ($order !== null) {
             $fileAdder->setOrder($order);
@@ -95,6 +111,18 @@ abstract class MediaUploader extends Uploader
     {
         $item = $this->get($entry);
 
-        return $item ? $item->getUrl() : null;
+        return $item ? $this->getMediaIdentifier($item) : null;
+    }
+
+    protected function getMediaIdentifier($item)
+    {
+        foreach($this->displayConversions as $conversion) {
+            if($item->hasGeneratedConversion($conversion)) {
+                $filename = Str::of($item->file_name);
+                return $item->id.'/conversions/'.$filename->before('.').'-'.$conversion.'.'.$filename->after('.');
+            }
+        }
+
+        return $item->id.'/'.$item->file_name;
     }
 }

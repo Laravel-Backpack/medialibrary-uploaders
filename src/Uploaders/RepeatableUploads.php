@@ -15,11 +15,6 @@ class RepeatableUploads extends Uploader implements RepeatableUploaderInterface
         $this->fieldName = $field['name'];
     }
 
-    public function get($entry)
-    {
-        return $this->getForDisplay($entry);
-    }
-
     public function uploads(...$uploads): self
     {
         foreach ($uploads as $upload) {

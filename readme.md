@@ -21,6 +21,9 @@ php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServicePr
 # run the migration
 php artisan migrate
 
+# make you have your storage symbolic links created
+php artisan storage:link
+
 # (optionally) publish the config file
 php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="config"
 

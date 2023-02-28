@@ -58,7 +58,7 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
 
         foreach ($this->repeatableUploads as $upload) {
             $uploadValues = $upload->getRepeatableItemsAsArray($entry);
-            $values = array_merge_recursive_distinct($values, $uploadValues);
+            $values = $this->mergeValuesRecursive($values, $uploadValues);
         }
 
         return $values;

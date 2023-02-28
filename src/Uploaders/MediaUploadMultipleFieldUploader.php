@@ -2,13 +2,18 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
-use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
-use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class MediaUploadMultipleFieldUploader extends MediaUploader
 {
+    public function __construct(array $field, $configuration)
+    {
+        parent::__construct($field, $configuration ?? []);
+        CRUD::field($this->fieldName)->upload(true);
+    }
+
     public static function for(array $field, $configuration): self
     {
         return (new static($field, $configuration))->multiple();
@@ -24,7 +29,7 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
         $media = $this->get($entry);
 
         return $media->map(function ($media) {
-            return $media->getUrl();
+            return $this->getMediaIdentifier($media);
         })->toArray();
     }
 
@@ -58,7 +63,7 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
         $filesToDelete = collect($this->getFromRequestAsArray('clear_'))->flatten()->toArray();
         $fileOrder = $this->getFromRequestAsArray('_order_', ',');
 
-        $value = CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
+        $value = CRUD::getRequest()->file($this->parentField) ?? [];
 
         foreach ($value as $row => $rowValue) {
             foreach ($rowValue[$this->fieldName] ?? [] as $file) {
@@ -103,7 +108,7 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
 
     private function getFromRequestAsArray(string $key, $delimiter = null): array
     {
-        $items = CrudPanelFacade::getRequest()->input($key.$this->parentField) ?? [];
+        $items = CRUD::getRequest()->input($key.$this->parentField) ?? [];
 
         array_walk($items, function (&$key, $value) use ($delimiter) {
             $requestValue = $key[$this->fieldName] ?? null;
@@ -117,11 +122,11 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
         return $items;
     }
 
-    public function getRepeatableItemsAsArray($entry)
+    protected function getPreviousRepeatableValues(Model $entry)
     {
         return $this->get($entry)->groupBy('order_column')->transform(function ($media) {
             $items = $media->map(function ($item) {
-                return $item->getUrl();
+                return $item->id.'/'.$item->file_name;
             })->toArray();
 
             return [$this->fieldName => $items];

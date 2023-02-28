@@ -2,12 +2,19 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
-use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 
 class MediaUploadFieldUploader extends MediaUploader
 {
+
+    public function __construct(array $field, $configuration)
+    {
+        parent::__construct($field, $configuration ?? []);
+        CRUD::field($this->fieldName)->upload(true);
+    }
+
     public function save(Model $entry, $value = null)
     {
         return $this->isRepeatable ? $this->saveRepeatableUpload($entry, $value) : $this->saveUpload($entry, $value);
@@ -15,7 +22,7 @@ class MediaUploadFieldUploader extends MediaUploader
 
     private function saveRepeatableUpload($entry): void
     {
-        $values = CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
+        $values = CRUD::getRequest()->file($this->parentField) ?? [];
         
         $filesToClear = $this->getFromRequestAsArray('_clear_');
         $orderedFiles = $this->getFromRequestAsArray('_order_');
@@ -45,7 +52,7 @@ class MediaUploadFieldUploader extends MediaUploader
 
     private function getFromRequestAsArray(string $key): array
     {
-        $items = CrudPanelFacade::getRequest()->input($key.$this->parentField) ?? [];
+        $items = CRUD::getRequest()->input($key.$this->parentField) ?? [];
 
         array_walk($items, function (&$key, $value) {
             $key = $key[$this->fieldName] ?? null;
@@ -56,8 +63,8 @@ class MediaUploadFieldUploader extends MediaUploader
 
     private function saveUpload($entry): void
     {
-        $value = request()->file($this->fieldName);
-
+        $value = CRUD::getRequest()->file($this->fieldName);
+       
         $previousFile = $this->get($entry);
 
         if ($previousFile && ($value && is_a($value, UploadedFile::class) || request()->has($this->fieldName))) {

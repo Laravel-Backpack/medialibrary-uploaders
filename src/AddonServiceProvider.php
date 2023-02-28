@@ -34,7 +34,6 @@ class AddonServiceProvider extends ServiceProvider
         CrudField::macro('withMedia', function ($mediaDefinition = null) {
             RegisterUploadEvents::handle($this, $mediaDefinition, [
                 'image' => MediaImageFieldUploader::class,
-                'base64_image' => MediaImageFieldUploader::class,
                 'upload' => MediaUploadFieldUploader::class,
                 'upload_multiple' => MediaUploadMultipleFieldUploader::class,
                 'repeatable' => MediaRepeatableUploads::class
