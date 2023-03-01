@@ -51,18 +51,7 @@ abstract class MediaUploader extends Uploader
 
     protected function getPreviousRepeatableValues(Model $entry)
     {
-        if (! $this->isMultiple) {
-            return $this->get($entry)
-                        ->transform(function ($item) use ($entry) {
-                            return [
-                                $this->fieldName => $this->getMediaIdentifier($item, $entry), 
-                                'order_column' => $item->getCustomProperty('repeatableRow')
-                            ];
-                        })
-                        ->sortBy('order_column')
-                        ->keyBy('order_column')
-                        ->toArray();
-        }else{
+        if ($this->isMultiple) {
             return $this->get($entry)
                         ->groupBy(function($item) {
                             return $item->getCustomProperty('repeatableRow');
@@ -76,8 +65,18 @@ abstract class MediaUploader extends Uploader
                             return [$this->fieldName => $mediaItems];
                         })
                         ->toArray();
-
         }
+
+        return $this->get($entry)
+                    ->transform(function ($item) use ($entry) {
+                        return [
+                            $this->fieldName => $this->getMediaIdentifier($item, $entry), 
+                            'order_column' => $item->getCustomProperty('repeatableRow')
+                        ];
+                    })
+                    ->sortBy('order_column')
+                    ->keyBy('order_column')
+                    ->toArray();
     }
 
     public function get(Model $entry)

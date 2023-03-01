@@ -111,15 +111,4 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
 
         return $items;
     }
-
-    /* protected function getPreviousRepeatableValues(Model $entry)
-    {
-        return $this->get($entry)->groupBy('order_column')->transform(function ($media) use ($entry) {
-            $items = $media->map(function ($item) use ($entry) {
-                return $this->getMediaIdentifier($item, $entry);
-            })->toArray();
-
-            return [$this->fieldName => $items];
-        })->toArray();
-    } */
 }
