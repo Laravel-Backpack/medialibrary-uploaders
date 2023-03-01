@@ -20,7 +20,7 @@ class MediaUploadFieldUploader extends MediaUploader
         $filesToClear = $this->getFromRequestAsArray('_clear_');
         $orderedFiles = $this->getFromRequestAsArray('_order_');
         
-        $previousFiles = $this->get($entry);
+        $previousFiles = array_column($this->getPreviousRepeatableMedia($entry), $this->fieldName);
 
         foreach ($values as $row => $rowValue) {
             if (isset($rowValue[$this->fieldName]) && is_file($rowValue[$this->fieldName])) {
@@ -29,13 +29,15 @@ class MediaUploadFieldUploader extends MediaUploader
         }
 
         foreach ($previousFiles as $previousFile) {
-            if (in_array($previousFile->getUrl(), $filesToClear)) {
+            dd($previousFiles);
+            $previousFileIdentifier = $this->getMediaIdentifier($previousFile, $entry);
+            if (in_array($previousFileIdentifier, $filesToClear)) {
                 $previousFile->delete();
                 continue;
             }
 
-            if (in_array($previousFile->getUrl(), $orderedFiles)) {
-                $previousFile->order_column = array_search($previousFile->getUrl(), $orderedFiles);
+            if (in_array($previousFileIdentifier, $orderedFiles)) {
+                $previousFile->order_column = array_search($previousFileIdentifier, $orderedFiles);
                 $previousFile->save();
             }else{
                 $previousFile->delete();

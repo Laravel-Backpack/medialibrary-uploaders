@@ -68,7 +68,7 @@ CRUD::field('gallery')
 
 ### Overriding the defaults
 
-Backpack sets up some handy defaults for you when handling the media. But it also provides you a way to customize the bits you need from Spatie Media Library. You can pass a configuration array to `->withMedia([])` or `'withMedia' => []` to override the defaults Backpack has set:
+Backpack sets up some handy defaults for you when handling the media. But it also provides you a way to customize the bits you need from Spatie Media Library. You can pass a configuration array to `->withMedia([])` or `'withMedia' => []` to override the defaults Backpack has set.
 
 ```php
 CRUD::field('main_image')
@@ -81,7 +81,7 @@ CRUD::field('main_image')
         ]);
 ```
 
-### Customizing the saving process (adding thumbnails, etc)
+### Customizing the saving process (adding thumbnails, responsive images  etc)
 
 Inside the same configuration array mentioned above, you can use the `whenSaving` closure to customize the saving process. This closure will be called in THE MIDDLE of configuring the media collection. So AFTER calling the initializer function, but BEFORE calling toMediaCollection(). Do what you want to the $spatieMedia object, using Spatie's documented methods, then `return` it back to Backpack to call the termination method. Sounds good?
 
@@ -160,7 +160,21 @@ CRUD::field('main_image')
 
 ```
 
+### Custom properties
 
+You can normally assign custom properties to your media with `->withCustomProperties([])` as stated in spatie documentation, but please be advise that `fieldName`, `parentField` and `repeatableRow` are **reserved keywords** and Backpack values will **always** overwrite yours.
+
+```php
+'whenSaving' => function($media) {
+        return $media->withCustomProperties([
+            'my_property' => 'value',
+            'fieldName' => 'i_cant_use_this_key'
+        ]);
+    }
+
+// the saved custom properties will be: 
+//  - [my_property => value, fieldName => main_image, repeatableRow => null, parentField => null]`
+```
 
 
 

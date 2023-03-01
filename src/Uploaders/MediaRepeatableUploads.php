@@ -87,4 +87,18 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
 
         return $entry;
     }
+
+    private function mergeValuesRecursive($array1, $array2)
+    {
+        $merged = $array1;
+        foreach ($array2 as $key => &$value) {
+            if (is_array($value) && isset($merged[$key]) && is_array($merged[$key])) {
+                $merged[$key] = $this->mergeValuesRecursive($merged[$key], $value);
+            } else {
+                $merged[$key] = $value;
+            }
+        }
+
+        return $merged;
+    }
 }

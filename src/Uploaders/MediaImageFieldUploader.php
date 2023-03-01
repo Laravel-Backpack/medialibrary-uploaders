@@ -37,38 +37,40 @@ class MediaImageFieldUploader extends MediaUploader
 
     private function saveRepeatableImage($entry, $value): void
     {
-        $previousImages = $this->get($entry);
-
+        $previousImages = array_column($this->getPreviousRepeatableMedia($entry),$this->fieldName);
+    
         foreach ($value as $row => $rowValue) {
             if ($rowValue) {
                 if (Str::startsWith($rowValue, 'data:image')) {
-
                     $this->addMediaFile($entry, $rowValue, $row);
-
                     continue;
                 }
 
-                $filename = Str::afterLast($rowValue, '/');
-                $id = Str::afterLast(Str::beforeLast($rowValue, '/'), '/');
-
-                $value[$row] = $id.'/'.$filename;
-
-                $currentImage = $previousImages
-                    ->where('id', $id)->where('file_name', $filename)->first();
-
-                if ($currentImage && $currentImage->order_column !== $row) {
-                    $currentImage->order_column = $row;
-                    $currentImage->save();
+                $currentImage = $this->getMediaFromFileUrl($previousImages, $rowValue, $entry);
+             
+                if ($currentImage) {
+                    $value[$row] = $this->getMediaIdentifier($currentImage, $entry);
+                    if ($currentImage->getCustomProperty('repeatableRow') !== $row) {
+                        $currentImage->setCustomProperty('repeatableRow', $row);
+                        $currentImage->save();
+                    }
                 }
             }
         }
 
         foreach ($previousImages as $image) {
-            $mediaIdentifier = $image->id.'/'.$image->file_name;
-
-            if (! in_array($mediaIdentifier, $value)) {
+            if (! in_array($this->getMediaIdentifier($image, $entry), $value)) {
                 $image->delete();
             }
         }
+    }
+
+    private function getMediaFromFileUrl($previousImages, $fileUrl, $entry)
+    {    
+        $previousImage = array_filter($previousImages, function($image) use ($fileUrl, $entry) {
+            return Str::endsWith($fileUrl, $this->getMediaIdentifier($image, $entry));
+        });
+        
+        return is_array($previousImage) ? array_shift($previousImage) : null;
     }
 }

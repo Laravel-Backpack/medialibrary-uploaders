@@ -52,7 +52,7 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
 
     private function saveRepeatableUploadMultiple($entry): void
     {
-        $previousFiles = $this->get($entry);
+        $previousFiles = array_column($this->getPreviousRepeatableMedia($entry),$this->fieldName);
 
         $filesToDelete = collect($this->getFromRequestAsArray('clear_'))->flatten()->toArray();
         $fileOrder = $this->getFromRequestAsArray('_order_', ',');
@@ -68,12 +68,13 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
         }
 
         foreach ($previousFiles as $file) {
+            $previousFileIdentifier = $this->getMediaIdentifier($file, $entry);
             if (empty($fileOrder)) {
                 $file->delete();
                 continue;
             }
 
-            if (in_array($file->getUrl(), $filesToDelete)) {
+            if (in_array($previousFileIdentifier, $filesToDelete)) {
                 $file->delete();
 
                 continue;
@@ -81,11 +82,7 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
 
             foreach ($fileOrder as $row => $files) {
                 if (is_array($files)) {
-                    $files = array_map(function ($item) {
-                        return Str::after($item, url(''));
-                    }, $files);
-                    $key = array_search($file->getUrl(), $files, true);
-
+                    $key = array_search($previousFileIdentifier, $files, true);
                     if ($key !== false) {
                         $file->order_column = $row;
                         $file->save();
@@ -118,9 +115,9 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
 
     protected function getPreviousRepeatableValues(Model $entry)
     {
-        return $this->get($entry)->groupBy('order_column')->transform(function ($media) {
-            $items = $media->map(function ($item) {
-                return $item->id.'/'.$item->file_name;
+        return $this->get($entry)->groupBy('order_column')->transform(function ($media) use ($entry) {
+            $items = $media->map(function ($item) use ($entry) {
+                return $this->getMediaIdentifier($item, $entry);
             })->toArray();
 
             return [$this->fieldName => $items];

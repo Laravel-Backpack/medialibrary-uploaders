@@ -2,12 +2,11 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
-use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
-use Illuminate\Support\Str;
-use Spatie\MediaLibrary\Conversions\ConversionCollection;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
 
 abstract class MediaUploader extends Uploader
@@ -18,36 +17,41 @@ abstract class MediaUploader extends Uploader
 
     public $displayConversions;
 
-    public $keepOriginalConversionFileExtension;
+    public $order;
 
     public function __construct(array $field, array $configuration)
     {
         parent::__construct($field, $configuration);
 
         $this->collection = $configuration['collection'] ?? 'default';
-        $this->keepOriginalConversionFileExtension = $configuration['keepOriginalConversionFileExtension'] ?? true;
 
-        
         $modelDefinition = $this->getMediaCollectionFromModel();
 
         $this->displayConversions = $configuration['displayConversions'] ?? [];
-        $this->displayConversions = (array)$this->displayConversions;
+        $this->displayConversions = (array) $this->displayConversions;
 
-        $this->eventsModel = $field['eventsModel'];  
-        
+        $this->eventsModel = $field['eventsModel'];
+
         $this->disk = $modelDefinition?->diskName ?? null;
-        $this->disk = empty($this->disk) ? $configuration['disk'] ?? config('media-library.disk_name') : $this->disk;
+        $this->disk = empty($this->disk) ? $configuration['disk'] ?? $field['disk'] ?? config('media-library.disk_name') : $this->disk;
 
-        $this->mediaName = $configuration['name'] ?? $this->fieldName;
+        $this->mediaName = $configuration['mediaName'] ?? $this->fieldName;
         $this->isMultiple = $modelDefinition?->singleFile ?? $configuration['singleFile'] ?? false;
     }
 
     abstract public function save(Model $entry, $value = null);
 
-    protected function getPreviousRepeatableValues(Model $entry)
+    protected function getPreviousRepeatableMedia(Model $entry)
     {
         return $this->get($entry)->transform(function ($item) {
-            return [$this->fieldName => $this->getMediaIdentifier($item), 'order_column' => $item->order_column];
+            return [$this->fieldName => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
+        })->sortBy('order_column')->keyBy('order_column')->toArray();
+    }
+
+    protected function getPreviousRepeatableValues(Model $entry)
+    {
+        return $this->get($entry)->transform(function ($item) use ($entry) {
+            return [$this->fieldName => $this->getMediaIdentifier($item, $entry), 'order_column' => $item->getCustomProperty('repeatableRow')];
         })->sortBy('order_column')->keyBy('order_column')->toArray();
     }
 
@@ -55,12 +59,12 @@ abstract class MediaUploader extends Uploader
     {
         if ($this->isRepeatable || $this->isMultiple) {
             return $entry->getMedia($this->collection, function ($media) {
-                return $media->name === $this->mediaName;
+                return $media->getCustomProperty('fieldName') === $this->fieldName && $media->getCustomProperty('parentField') === $this->parentField;
             });
         }
 
         return $entry->getFirstMedia($this->collection, function ($media) {
-            return $media->name === $this->mediaName;
+            return $media->getCustomProperty('fieldName') === $this->fieldName && $media->getCustomProperty('parentField') === $this->parentField;
         });
     }
 
@@ -85,70 +89,83 @@ abstract class MediaUploader extends Uploader
         }
 
         $media = $this->get($entry);
-        
-        if(! $media) {
+
+        if (! $media) {
             return null;
+        }
+        
+        if (empty($entry->mediaConversions)) {
+            $entry->registerAllMediaConversions();
         }
 
         if (is_a($media, 'Spatie\MediaLibrary\MediaCollections\Models\Media')) {
-            $entry->registerMediaConversions($media);
-
             $entry->{$this->fieldName} = $this->getMediaIdentifier($media, $entry);
-        }else{
-            $entry->{$this->fieldName} = $media->map(function($item) use ($entry) {
+        } else {
+            $entry->{$this->fieldName} = $media->map(function ($item) use ($entry) {
                 return $this->getMediaIdentifier($item, $entry);
             })->toArray();
         }
+
         return $entry;
     }
 
     protected function addMediaFile($entry, $file, $order = null)
     {
+        $this->order = $order;
+
         $fileAdder = is_a($file, UploadedFile::class, true) ? $entry->addMedia($file) : $entry->addMediaFromBase64($file);
 
         $fileAdder = $fileAdder->usingName($this->mediaName)
+                                ->withCustomProperties($this->getCustomProperties())
                                 ->usingFileName($this->getFileName($file).'.'.$this->getExtensionFromFile($file));
 
-        if ($order !== null) {
-            $fileAdder->setOrder($order);
-        }
-
-        $constrainedMedia = new ConstrainedFileAdder(null);
+        $constrainedMedia = new ConstrainedFileAdder();
         $constrainedMedia->setFileAdder($fileAdder);
+        $constrainedMedia->setMediaUploader($this);
 
         if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
             $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
         }
 
+        if(!$constrainedMedia) {
+            throw new Exception('Please return a valid class from `whenSaving` closure on field: ' . $this->fieldName);
+        }
+
         $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
+    }
+
+    public function getCustomProperties()
+    {
+        return ['fieldName' => $this->fieldName, 'parentField' => $this->parentField, 'repeatableRow' => $this->order];
     }
 
     protected function getMediaIdentifier($media, $entry = null)
     {
         $path = PathGeneratorFactory::create($media);
 
-        if($entry && !empty($entry->mediaConversions)) {
-            $conversion = array_filter($entry->mediaConversions, function($item) use ($media) {
+        if ($entry && ! empty($entry->mediaConversions)) {
+            $conversion = array_filter($entry->mediaConversions, function ($item) use ($media) {
                 return $item->getName() === $this->getConversionToDisplay($media);
-            })[0] ?? [];
+            })[0] ?? null;
 
             if (! $conversion) {
                 return $path->getPath($media).$media->file_name;
             }
-           
+
             return $path->getPathForConversions($media).$conversion->getConversionFile($media);
         }
 
         return $path->getPath($media).$media->file_name;
     }
 
-    private function getConversionToDisplay($item) {
-        foreach($this->displayConversions as $displayConversion)
-        {
-            if($item->hasGeneratedConversion($displayConversion)) {
+    private function getConversionToDisplay($item)
+    {
+        foreach ($this->displayConversions as $displayConversion) {
+            if ($item->hasGeneratedConversion($displayConversion)) {
                 return $displayConversion;
             }
         }
+
         return false;
     }
 

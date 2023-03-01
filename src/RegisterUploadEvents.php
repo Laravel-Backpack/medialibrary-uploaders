@@ -70,6 +70,10 @@ class RegisterUploadEvents
             return $mediaDefinition['uploaderType']::for($field, $mediaDefinition);
         }
 
+        if(isset($field['subfields'])) {
+            $field['type'] = 'repeatable';
+        }
+
         if (isset(self::$defaultUploaders[$field['type']])) {
             return self::$defaultUploaders[$field['type']]::for($field, $mediaDefinition);
         }
