@@ -29,7 +29,6 @@ class MediaUploadFieldUploader extends MediaUploader
         }
 
         foreach ($previousFiles as $previousFile) {
-            dd($previousFiles);
             $previousFileIdentifier = $this->getMediaIdentifier($previousFile, $entry);
             if (in_array($previousFileIdentifier, $filesToClear)) {
                 $previousFile->delete();
@@ -37,7 +36,7 @@ class MediaUploadFieldUploader extends MediaUploader
             }
 
             if (in_array($previousFileIdentifier, $orderedFiles)) {
-                $previousFile->order_column = array_search($previousFileIdentifier, $orderedFiles);
+                $previousFile->setCustomProperty('repeatableRow', array_search($previousFileIdentifier, $orderedFiles));
                 $previousFile->save();
             }else{
                 $previousFile->delete();

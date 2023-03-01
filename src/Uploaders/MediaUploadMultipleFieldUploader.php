@@ -4,7 +4,6 @@ namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 class MediaUploadMultipleFieldUploader extends MediaUploader
 {
@@ -84,7 +83,7 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
                 if (is_array($files)) {
                     $key = array_search($previousFileIdentifier, $files, true);
                     if ($key !== false) {
-                        $file->order_column = $row;
+                        $file->setCustomProperty('repeatableRow', $row);
                         $file->save();
                         // avoid checking the same file twice. This is a performance improvement.
                         unset($fileOrder[$row][$key]);
@@ -113,7 +112,7 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
         return $items;
     }
 
-    protected function getPreviousRepeatableValues(Model $entry)
+    /* protected function getPreviousRepeatableValues(Model $entry)
     {
         return $this->get($entry)->groupBy('order_column')->transform(function ($media) use ($entry) {
             $items = $media->map(function ($item) use ($entry) {
@@ -122,5 +121,5 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
 
             return [$this->fieldName => $items];
         })->toArray();
-    }
+    } */
 }

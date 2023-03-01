@@ -7,6 +7,7 @@ use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
 
 abstract class MediaUploader extends Uploader
@@ -36,7 +37,7 @@ abstract class MediaUploader extends Uploader
         $this->disk = empty($this->disk) ? $configuration['disk'] ?? $field['disk'] ?? config('media-library.disk_name') : $this->disk;
 
         $this->mediaName = $configuration['mediaName'] ?? $this->fieldName;
-        $this->isMultiple = $modelDefinition?->singleFile ?? $configuration['singleFile'] ?? false;
+        $this->isMultiple = false;
     }
 
     abstract public function save(Model $entry, $value = null);
@@ -50,9 +51,33 @@ abstract class MediaUploader extends Uploader
 
     protected function getPreviousRepeatableValues(Model $entry)
     {
-        return $this->get($entry)->transform(function ($item) use ($entry) {
-            return [$this->fieldName => $this->getMediaIdentifier($item, $entry), 'order_column' => $item->getCustomProperty('repeatableRow')];
-        })->sortBy('order_column')->keyBy('order_column')->toArray();
+        if (! $this->isMultiple) {
+            return $this->get($entry)
+                        ->transform(function ($item) use ($entry) {
+                            return [
+                                $this->fieldName => $this->getMediaIdentifier($item, $entry), 
+                                'order_column' => $item->getCustomProperty('repeatableRow')
+                            ];
+                        })
+                        ->sortBy('order_column')
+                        ->keyBy('order_column')
+                        ->toArray();
+        }else{
+            return $this->get($entry)
+                        ->groupBy(function($item) {
+                            return $item->getCustomProperty('repeatableRow');
+                        })
+                        ->transform(function ($media) use ($entry) {
+                            $mediaItems = $media->map(function($item) use ($entry) {
+                                return $this->getMediaIdentifier($item, $entry);
+                            })
+                            ->toArray();
+
+                            return [$this->fieldName => $mediaItems];
+                        })
+                        ->toArray();
+
+        }
     }
 
     public function get(Model $entry)

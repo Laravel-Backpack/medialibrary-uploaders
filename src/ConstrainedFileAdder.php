@@ -4,7 +4,6 @@ namespace Backpack\MediaLibraryUploads;
 
 use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Spatie\MediaLibrary\MediaCollections\FileAdder;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * @mixin \Spatie\MediaLibrary\MediaCollections\FileAdder
@@ -21,22 +20,22 @@ class ConstrainedFileAdder
         return $this;
     }
 
-    public function toMediaCollection(string $collectionName = 'default', string $diskName = ''): Media
+    public function toMediaCollection(string $collectionName = 'default', string $diskName = '')
     {
         abort(500, 'toMediaCollection() is automatically called by Backpack. You should configure it with: ->withMedia([\'collection\' => \''.$collectionName.'\', \'disk\' => \''.$diskName.'\'])');
     }
 
-    public function toMediaCollectionFromRemote(string $collectionName = 'default', string $diskName = ''): Media
+    public function toMediaCollectionFromRemote(string $collectionName = 'default', string $diskName = '')
     {
         abort(500, 'toMediaCollection() is automatically called by Backpack. You should configure it with: ->withMedia([\'collection\' => \''.$collectionName.'\', \'disk\' => \''.$diskName.'\'])');
     }
 
-    public function toMediaLibrary(string $collectionName = 'default', string $diskName = ''): Media
+    public function toMediaLibrary(string $collectionName = 'default', string $diskName = '')
     {
         abort(500, 'toMediaCollection() is automatically called by Backpack. You should configure it with: ->withMedia([\'collection\' => \''.$collectionName.'\', \'disk\' => \''.$diskName.'\'])');
     }
 
-    public function toMediaCollectionOnCloudDisk(string $collectionName = 'default'): Media
+    public function toMediaCollectionOnCloudDisk(string $collectionName = 'default')
     {
         abort(500, 'toMediaCollection() is automatically called by Backpack. You should configure it with: ->withMedia([\'collection\' => \''.$collectionName.'\', \'disk\' => \''.$diskName.'\'])'); 
     }
