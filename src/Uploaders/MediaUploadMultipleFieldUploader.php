@@ -8,12 +8,6 @@ use Illuminate\Support\Str;
 
 class MediaUploadMultipleFieldUploader extends MediaUploader
 {
-    public function __construct(array $field, $configuration)
-    {
-        parent::__construct($field, $configuration ?? []);
-        CRUD::field($this->fieldName)->upload(true);
-    }
-
     public static function for(array $field, $configuration): self
     {
         return (new static($field, $configuration))->multiple();
@@ -28,22 +22,22 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
     {
         $media = $this->get($entry);
 
-        return $media->map(function ($media) {
-            return $this->getMediaIdentifier($media);
+        return $media->map(function ($media) use ($entry) {
+            return $this->getMediaIdentifier($media, $entry);
         })->toArray();
     }
 
     private function saveUploadMultiple($entry, $value = null): void
     {
-        $filesToDelete = request()->get('clear_'.$this->fieldName);
+        $filesToDelete = CRUD::getRequest()->get('clear_'.$this->fieldName);
 
-        $value = request()->file($this->fieldName);
+        $value = CRUD::getRequest()->file($this->fieldName);
 
         $previousFiles = $this->get($entry);
 
         if ($filesToDelete) {
             foreach ($previousFiles as $previousFile) {
-                if (in_array($previousFile->getUrl(), $filesToDelete)) {
+                if (in_array($this->getMediaIdentifier($previousFile, $entry), $filesToDelete)) {
                     $previousFile->delete();
                 }
             }

@@ -21,7 +21,7 @@ php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServicePr
 # run the migration
 php artisan migrate
 
-# make you have your storage symbolic links created
+# make sure you have your storage symbolic links created for the default laravel `public` disk
 php artisan storage:link
 
 # (optionally) publish the config file
@@ -113,6 +113,7 @@ public function registerMediaCollections(): void
         ->useDisk('products');
 }
 
+// And in YourCrudController.php
 CRUD::field('main_image')
         ->label('Main Image')
         ->type('image')
@@ -120,6 +121,47 @@ CRUD::field('main_image')
             'collection' => 'product_images', // will pick the collection definition from your model
         ]);
 ```
+
+### Working with Conversions
+
+Sometimes you will want to create conversions for your images, like thumbnails etc. In case you want to display some conversions instead of the original image on the field you should define `displayConversions => 'conversion_name'` or `displayConversions => ['higher_priority_conversion', 'second_priority_conversion']`. 
+
+In the end, if none of the conversions are ready yet (maybe they are still queued), we will display the original file as a fallback. 
+
+```php
+// In your Model.php
+
+public function registerMediaConversions(): void
+{
+    $this->addMediaConversion('thumb')
+                ->width(368)
+                ->height(232)
+                ->keepOriginalImageFormat()
+                ->nonQueued();
+}
+
+// And in YourCrudController.php
+CRUD::field('main_image')
+        ->label('Main Image')
+        ->type('image')
+        ->withMedia([
+            'displayConversions' => 'thumb'
+        ]);
+        
+// you can also configure aditional manipulations in the `whenSaving` callback
+->withMedia([
+    'displayConversions' => 'thumb',
+    'whenSaving' => function($media) {
+        return $media->withManipulations([
+            'thumb' => ['orientation' => 90]
+        ]);
+    }
+]);
+
+```
+
+
+
 
 
 ## Change log

@@ -2,7 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
-use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -16,7 +16,7 @@ class ImageFieldUploader extends Uploader
 
     private function saveImage($entry)
     {
-        $value = CrudPanelFacade::getRequest()->get($this->fieldName);
+        $value = CRUD::getRequest()->get($this->fieldName);
         $previousImage = $entry->getOriginal($this->fieldName);
 
         if (! $value && $previousImage) {

@@ -2,6 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
 use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -44,12 +45,33 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
             }
             $this->repeatableUploads[] = $upload->repeats($this->fieldName);
         }
-
         return $this;
     }
 
-    public function getForDisplay(Model $entry)
+    public function retrieveUploadedFile(Model $entry)
     {
+        $crudField = CRUD::field($this->fieldName);
+
+        $subfields = collect($crudField->getAttributes()['subfields']);
+        $subfields = $subfields->map(function ($item) {
+            if (isset($item['withMedia']) || isset($item['withUploads'])) {
+                $uploader = array_filter($this->repeatableUploads, function ($item) {
+                    return $item->fieldName !== $this->fieldName;
+                })[0];
+
+                $item['disk'] = $uploader->disk;
+                $item['prefix'] = $uploader->path;
+                if ($uploader->temporary) {
+                    $item['temporary'] = $uploader->temporary;
+                    $item['expiration'] = $uploader->expiration;
+                }
+            }
+
+            return $item;
+        })->toArray();
+
+        $crudField->subfields($subfields);
+
         $values = $entry->{$this->fieldName} ?? [];
 
         if (! is_array($values)) {
@@ -57,10 +79,12 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
         }
 
         foreach ($this->repeatableUploads as $upload) {
-            $uploadValues = $upload->getRepeatableItemsAsArray($entry);
+            $uploadValues = $upload->getPreviousRepeatableValues($entry);
             $values = $this->mergeValuesRecursive($values, $uploadValues);
         }
+        
+        $entry->{$this->fieldName} = $values;
 
-        return $values;
+        return $entry;
     }
 }

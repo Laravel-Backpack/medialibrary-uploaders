@@ -2,7 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
-use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
 use Illuminate\Database\Eloquent\Model;
 
@@ -45,7 +45,7 @@ class RepeatableUploads extends Uploader implements RepeatableUploaderInterface
 
     public function retrieveUploadedFile(Model $entry)
     {
-        $crudField = CrudPanelFacade::field($this->fieldName);
+        $crudField = CRUD::field($this->fieldName);
 
         $subfields = collect($crudField->getAttributes()['subfields']);
         $subfields = $subfields->map(function ($item) {
@@ -63,9 +63,9 @@ class RepeatableUploads extends Uploader implements RepeatableUploaderInterface
             }
 
             return $item;
-        });
+        })->toArray();
 
-        $crudField->subfields($subfields->toArray());
+        $crudField->subfields($subfields);
 
         return $entry;
     }

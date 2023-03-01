@@ -8,13 +8,6 @@ use Illuminate\Http\UploadedFile;
 
 class MediaUploadFieldUploader extends MediaUploader
 {
-
-    public function __construct(array $field, $configuration)
-    {
-        parent::__construct($field, $configuration ?? []);
-        CRUD::field($this->fieldName)->upload(true);
-    }
-
     public function save(Model $entry, $value = null)
     {
         return $this->isRepeatable ? $this->saveRepeatableUpload($entry, $value) : $this->saveUpload($entry, $value);
