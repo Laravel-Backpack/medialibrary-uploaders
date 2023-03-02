@@ -21,6 +21,9 @@ php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServicePr
 # run the migration
 php artisan migrate
 
+# make sure you have your storage symbolic links created for the default laravel `public` disk
+php artisan storage:link
+
 # (optionally) publish the config file
 php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="config"
 
@@ -65,7 +68,7 @@ CRUD::field('gallery')
 
 ### Overriding the defaults
 
-Backpack sets up some handy defaults for you when handling the media. But it also provides you a way to customize the bits you need from Spatie Media Library. You can pass a configuration array to `->withMedia([])` or `'withMedia' => []` to override the defaults Backpack has set:
+Backpack sets up some handy defaults for you when handling the media. But it also provides you a way to customize the bits you need from Spatie Media Library. You can pass a configuration array to `->withMedia([])` or `'withMedia' => []` to override the defaults Backpack has set.
 
 ```php
 CRUD::field('main_image')
@@ -78,7 +81,7 @@ CRUD::field('main_image')
         ]);
 ```
 
-### Customizing the saving process (adding thumbnails, etc)
+### Customizing the saving process (adding thumbnails, responsive images  etc)
 
 Inside the same configuration array mentioned above, you can use the `whenSaving` closure to customize the saving process. This closure will be called in THE MIDDLE of configuring the media collection. So AFTER calling the initializer function, but BEFORE calling toMediaCollection(). Do what you want to the $spatieMedia object, using Spatie's documented methods, then `return` it back to Backpack to call the termination method. Sounds good?
 
@@ -110,6 +113,7 @@ public function registerMediaCollections(): void
         ->useDisk('products');
 }
 
+// And in YourCrudController.php
 CRUD::field('main_image')
         ->label('Main Image')
         ->type('image')
@@ -117,6 +121,61 @@ CRUD::field('main_image')
             'collection' => 'product_images', // will pick the collection definition from your model
         ]);
 ```
+
+### Working with Conversions
+
+Sometimes you will want to create conversions for your images, like thumbnails etc. In case you want to display some conversions instead of the original image on the field you should define `displayConversions => 'conversion_name'` or `displayConversions => ['higher_priority_conversion', 'second_priority_conversion']`. 
+
+In the end, if none of the conversions are ready yet (maybe they are still queued), we will display the original file as a fallback. 
+
+```php
+// In your Model.php
+
+public function registerMediaConversions(): void
+{
+    $this->addMediaConversion('thumb')
+                ->width(368)
+                ->height(232)
+                ->keepOriginalImageFormat()
+                ->nonQueued();
+}
+
+// And in YourCrudController.php
+CRUD::field('main_image')
+        ->label('Main Image')
+        ->type('image')
+        ->withMedia([
+            'displayConversions' => 'thumb'
+        ]);
+        
+// you can also configure aditional manipulations in the `whenSaving` callback
+->withMedia([
+    'displayConversions' => 'thumb',
+    'whenSaving' => function($media) {
+        return $media->withManipulations([
+            'thumb' => ['orientation' => 90]
+        ]);
+    }
+]);
+
+```
+
+### Custom properties
+
+You can normally assign custom properties to your media with `->withCustomProperties([])` as stated in spatie documentation, but please be advise that `fieldName`, `parentField` and `repeatableRow` are **reserved keywords** and Backpack values will **always** overwrite yours.
+
+```php
+'whenSaving' => function($media) {
+        return $media->withCustomProperties([
+            'my_property' => 'value',
+            'fieldName' => 'i_cant_use_this_key'
+        ]);
+    }
+
+// the saved custom properties will be: 
+//  - [my_property => value, fieldName => main_image, repeatableRow => null, parentField => null]`
+```
+
 
 
 ## Change log
