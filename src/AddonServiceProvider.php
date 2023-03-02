@@ -38,6 +38,7 @@ class AddonServiceProvider extends ServiceProvider
                 'upload_multiple' => MediaUploadMultipleFieldUploader::class,
                 'repeatable' => MediaRepeatableUploads::class
             ]);
+            return $this;
         });
 
         // TODO: move to core
@@ -49,6 +50,8 @@ class AddonServiceProvider extends ServiceProvider
                 'repeatable' => RepeatableUploads::class
 
             ]);
+
+            return $this;
         });
     }
 }
