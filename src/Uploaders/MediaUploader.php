@@ -22,22 +22,26 @@ abstract class MediaUploader extends Uploader
 
     public function __construct(array $field, array $configuration)
     {
-        parent::__construct($field, $configuration);
+        $this->eventsModel = $field['eventsModel'];
 
         $this->collection = $configuration['collection'] ?? 'default';
-
-        $modelDefinition = $this->getMediaCollectionFromModel();
+        $this->mediaName = $configuration['mediaName'] ?? $field['name'];
 
         $this->displayConversions = $configuration['displayConversions'] ?? [];
         $this->displayConversions = (array) $this->displayConversions;
 
-        $this->eventsModel = $field['eventsModel'];
+        $modelDefinition = (new $this->eventsModel)->getRegisteredMediaCollections()
+                            ->reject(function ($item) {
+                                $item->name !== $this->collection;
+                            })
+                            ->first();
 
-        $this->disk = $modelDefinition?->diskName ?? null;
-        $this->disk = empty($this->disk) ? $configuration['disk'] ?? $field['disk'] ?? config('media-library.disk_name') : $this->disk;
-
-        $this->mediaName = $configuration['mediaName'] ?? $this->fieldName;
-        $this->isMultiple = false;
+        $configuration['disk'] = $modelDefinition?->diskName ?? null;
+        
+        $configuration['disk'] = empty($configuration['disk']) ? $field['disk'] ?? config('media-library.disk_name') : null;
+        
+        parent::__construct($field, $configuration);
+        
     }
 
     abstract public function save(Model $entry, $value = null);
@@ -81,20 +85,20 @@ abstract class MediaUploader extends Uploader
 
     public function get(Model $entry)
     {
-        if ($this->isRepeatable || $this->isMultiple) {
-            return $entry->getMedia($this->collection, function ($media) {
-                return $media->getCustomProperty('fieldName') === $this->fieldName && $media->getCustomProperty('parentField') === $this->parentField;
+        if ($this->isMultiple || $this->isRepeatable) {
+            return $entry->getMedia($this->collection, function ($media) use ($entry) {
+                return $media->getCustomProperty('fieldName') === $this->fieldName && $media->getCustomProperty('parentField') === $this->parentField && $entry->id === $media->model_id;
             });
         }
 
-        return $entry->getFirstMedia($this->collection, function ($media) {
-            return $media->getCustomProperty('fieldName') === $this->fieldName && $media->getCustomProperty('parentField') === $this->parentField;
+        return $entry->getFirstMedia($this->collection, function ($media) use ($entry) {
+            return $media->getCustomProperty('fieldName') === $this->fieldName && $media->getCustomProperty('parentField') === $this->parentField && $entry->id === $media->model_id;
         });
     }
 
     public function processFileUpload(Model $entry)
     {
-        if (is_a($this, \Backpack\MediaLibraryUploads\Uploaders\MediaRepeatableUploads::class)) {
+        if (is_a($this, \Backpack\MediaLibraryUploads\Uploaders\MediaRepeatableUploads::class) && ! $this->isRelationship) {
             $entry->{$this->fieldName} = json_encode($this->save($entry));
         } else {
             $this->save($entry);
@@ -106,14 +110,8 @@ abstract class MediaUploader extends Uploader
 
     public function retrieveUploadedFile(Model $entry)
     {
-        $crudField = CRUD::field($this->fieldName)->disk($this->disk)->prefix($this->path);
-
-        if ($this->temporary) {
-            $crudField->temporary($this->temporary)->expiration($this->expiration);
-        }
-
         $media = $this->get($entry);
-
+       
         if (! $media) {
             return null;
         }
@@ -191,14 +189,5 @@ abstract class MediaUploader extends Uploader
         }
 
         return false;
-    }
-
-    private function getMediaCollectionFromModel()
-    {
-        return $this->modelInstance()->getRegisteredMediaCollections()
-                                ->reject(function ($item) {
-                                    $item->name !== $this->collection;
-                                })
-                                ->first();
     }
 }
