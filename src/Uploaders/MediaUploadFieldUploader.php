@@ -55,9 +55,9 @@ class MediaUploadFieldUploader extends MediaUploader
         return $items;
     }
 
-    private function saveUpload($entry): void
+    private function saveUpload($entry, $value = null): void
     {
-        $value = CRUD::getRequest()->file($this->fieldName);
+        $value = $value ?? CRUD::getRequest()->file($this->fieldName);
        
         $previousFile = $this->get($entry);
 

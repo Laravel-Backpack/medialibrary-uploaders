@@ -32,6 +32,8 @@ abstract class Uploader implements UploaderInterface
 
     public $expiration;
 
+    public $isRelationship;
+
     public function __construct(array $field, $definition)
     {
         $this->fieldName = $field['name'];
@@ -41,36 +43,16 @@ abstract class Uploader implements UploaderInterface
         $this->expiration = $definition['expiration'] ?? 1;
         $this->eventsModel = $field['eventsModel'];
         $this->path = $definition['path'] ?? '';
+        $this->isRelationship = false;
 
         if (! empty($this->path) && ! Str::endsWith($this->path, '/')) {
             $this->path = $this->path.'/';
         }
 
-        $this->setupRepeatableDefaults($field);
+        $this->setupUploadConfigsInField($field);
     }
 
     abstract public function save(Model $entry, $values = null);
-
-    private function setupRepeatableDefaults($field)
-    {
-        $crudField = CRUD::field($field['parentFieldName'] ?? $field['name']);
-
-        if (isset($field['parentFieldName'])) {
-            $this->isRepeatable = true;
-            $this->parentField = $field['parentFieldName'];
-
-            $subfields = $crudField->getAttributes()['subfields'];
-
-            foreach ($subfields as &$subfield) {
-                if ($subfield['name'] === $this->fieldName) {
-                    $subfield['upload'] = true;
-                }
-            }
-            $crudField->subfields($subfields);
-        } else {
-            $crudField->upload(true);
-        }
-    }
 
     public function processFileUpload(Model $entry)
     {
@@ -85,12 +67,6 @@ abstract class Uploader implements UploaderInterface
 
     public function retrieveUploadedFile(Model $entry)
     {
-        $crudField = CRUD::field($this->fieldName)->disk($this->disk)->prefix($this->path);
-
-        if ($this->temporary) {
-            $crudField->temporary($this->temporary)->expiration($this->expiration);
-        }
-
         return $entry;
     }
 
@@ -102,6 +78,14 @@ abstract class Uploader implements UploaderInterface
     protected function multiple()
     {
         $this->isMultiple = true;
+
+        return $this;
+    }
+
+    protected function relationship(bool $isRelationship)
+    {
+        $this->isRelationship = $isRelationship;
+        $this->isRepeatable = false;
 
         return $this;
     }
@@ -142,5 +126,32 @@ abstract class Uploader implements UploaderInterface
     protected function getExtensionFromFile($file)
     {
         return is_a($file, UploadedFile::class, true) ? $file->extension() : Str::after(mime_content_type($file), '/');
+    }
+
+    private function setupUploadConfigsInField($field)
+    {
+        $crudField = CRUD::field($field['parentFieldName'] ?? $field['name']);
+
+        if (isset($field['parentFieldName'])) {
+            $this->isRepeatable = true;
+            $this->parentField = $field['parentFieldName'];
+
+            $subfields = $crudField->getAttributes()['subfields'];
+
+            $modifiedSubfields = [];
+            foreach ($subfields as $subfield) {
+                if ($subfield['name'] === $this->fieldName) {
+                    $subfield['upload'] = true;
+                    $subfield['disk'] = $field['disk'] ?? $this->disk;
+                    $subfield['prefix'] = $field['prefix'] ?? $field['path'] ?? $this->path;
+                    $modifiedSubfields[] = $subfield;
+                    continue;
+                }
+                $modifiedSubfields[] = $subfield;
+            }
+            $crudField->subfields($modifiedSubfields);
+        } else {
+            $crudField->upload(true)->disk($field['disk'] ?? $this->disk)->prefix($field['prefix'] ?? $field['path'] ?? $this->path);
+        }
     }
 }

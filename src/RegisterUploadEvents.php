@@ -2,6 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads;
 
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Exception;
 
 class RegisterUploadEvents
@@ -29,7 +30,13 @@ class RegisterUploadEvents
     private static function setupModelEvents($model, $field): void
     {
         $model::saving(function ($entry) use ($field) {
+            $createdModelCount = 'model_count_'.$field->fieldName;
+
+            CRUD::set($createdModelCount, CRUD::get($createdModelCount) ?? 0);
+
             $entry = $field->processFileUpload($entry);
+
+            CRUD::set($createdModelCount, CRUD::get($createdModelCount) + 1);
         });
 
         $model::retrieved(function ($entry) use ($field) {
@@ -70,7 +77,7 @@ class RegisterUploadEvents
             return $mediaDefinition['uploaderType']::for($field, $mediaDefinition);
         }
 
-        if(isset($field['subfields'])) {
+        if (isset($field['subfields'])) {
             $field['type'] = 'repeatable';
         }
 

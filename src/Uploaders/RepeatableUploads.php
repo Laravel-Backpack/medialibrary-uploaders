@@ -10,6 +10,8 @@ class RepeatableUploads extends Uploader implements RepeatableUploaderInterface
 {
     public $repeatableUploads;
 
+    public $isRelationship;
+
     public function __construct(array $field)
     {
         $this->fieldName = $field['name'];
@@ -39,7 +41,7 @@ class RepeatableUploads extends Uploader implements RepeatableUploaderInterface
                 return $item;
             });
         }
-
+        
         return $values;
     }
 
