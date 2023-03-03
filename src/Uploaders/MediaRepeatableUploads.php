@@ -14,12 +14,19 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
     public function __construct($field)
     {
         $this->fieldName = $field['name'];
+        $this->isRelationship = isset($field['relation_type']) && $field['entity'] !== false; 
     }
 
     public function save(Model $entry, $value = null)
     {
+        return $this->isRelationship ? $this->saveRelationship($entry) : $this->saveRepeatable($entry);
+    }
+
+    private function saveRepeatable($entry)
+    {
         $values = collect(request()->get($this->fieldName));
         foreach ($this->repeatableUploads as $upload) {
+            //dd($upload, $values);
             $upload->save($entry, $values->pluck($upload->fieldName)->toArray());
 
             $values->transform(function ($item) use ($upload) {
@@ -30,6 +37,28 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
         }
 
         return $values;
+    }
+
+    private function saveRelationship($entry)
+    {
+        $values = collect(request()->get($this->fieldName));
+        $files = collect(request()->file($this->fieldName));
+        
+        $values = $this->mergeValuesRecursive($values, $files);
+        
+        $modelCount = CRUD::get('model_count_'.$this->fieldName);
+
+        $value = collect($values)->slice($modelCount, 1);
+
+        foreach ($this->repeatableUploads as $upload) {
+            if (isset($value[$modelCount][$upload->fieldName])) {
+                $upload->save($entry, $value[$modelCount][$upload->fieldName]);
+            }
+            $entry->offsetUnset($upload->fieldName);
+        }
+        
+
+        return $entry;
     }
 
     public static function for(array $field, $definition): self
@@ -43,35 +72,20 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
             if (! is_a($upload, UploaderInterface::class)) {
                 throw new \Exception('Uploads must be an instance of UploaderInterface.');
             }
-            $this->repeatableUploads[] = $upload->repeats($this->fieldName);
+
+            $this->repeatableUploads[] = $upload->repeats($this->fieldName)->relationship($this->isRelationship);
         }
+
         return $this;
     }
 
     public function retrieveUploadedFile(Model $entry)
     {
-        $crudField = CRUD::field($this->fieldName);
+        return $this->isRelationship ? $this->retrieveFromRelationship($entry) : $this->retrieveFromRepeatable($entry);
+    }
 
-        $subfields = collect($crudField->getAttributes()['subfields']);
-        $subfields = $subfields->map(function ($item) {
-            if (isset($item['withMedia']) || isset($item['withUploads'])) {
-                $uploader = array_filter($this->repeatableUploads, function ($item) {
-                    return $item->fieldName !== $this->fieldName;
-                })[0];
-
-                $item['disk'] = $uploader->disk;
-                $item['prefix'] = $uploader->path;
-                if ($uploader->temporary) {
-                    $item['temporary'] = $uploader->temporary;
-                    $item['expiration'] = $uploader->expiration;
-                }
-            }
-
-            return $item;
-        })->toArray();
-
-        $crudField->subfields($subfields);
-
+    private function retrieveFromRepeatable($entry)
+    {
         $values = $entry->{$this->fieldName} ?? [];
 
         if (! is_array($values)) {
@@ -82,9 +96,34 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
             $uploadValues = $upload->getPreviousRepeatableValues($entry);
             $values = $this->mergeValuesRecursive($values, $uploadValues);
         }
-        
+
         $entry->{$this->fieldName} = $values;
 
+        return $entry;
+    }
+
+    private function retrieveFromRelationship($entry)
+    {
+        foreach ($this->repeatableUploads as $upload) {
+            $media = $upload->get($entry);
+
+            if (! $media) {
+                continue;
+            }
+       
+            if (empty($entry->mediaConversions)) {
+                $entry->registerAllMediaConversions();
+            }
+
+            if (is_a($media, 'Spatie\MediaLibrary\MediaCollections\Models\Media')) {
+                $entry->{$upload->fieldName} = $upload->getMediaIdentifier($media, $entry);
+            } else {
+                $entry->{$upload->fieldName} = $media->map(function ($item) use ($entry, $upload) {
+                    return $upload->getMediaIdentifier($item, $entry);
+                })->toArray();
+            }
+        }
+    
         return $entry;
     }
 
