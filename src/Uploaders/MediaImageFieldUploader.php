@@ -11,21 +11,21 @@ class MediaImageFieldUploader extends MediaUploader
 {
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable ? $this->saveRepeatableImage($entry, $value) : $this->saveImage($entry, $value);
+        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableImage($entry, $value) : $this->saveImage($entry, $value);
     }
 
     private function saveImage($entry, $value = null): void
     {
         $value = $value ?? CrudPanelFacade::getRequest()->get($this->fieldName);
-
+        
         $previousImage = $this->get($entry);
-
+        
         if (! $value && $previousImage) {
             $previousImage->delete();
 
             return;
         }
-
+       
         if (Str::startsWith($value, 'data:image')) {
             if ($previousImage) {
                 $previousImage->delete();

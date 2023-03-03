@@ -28,12 +28,14 @@ class MediaUploadMultipleFieldUploader extends MediaUploader
 
     private function saveUploadMultiple($entry, $value = null): void
     {
-        $filesToDelete = CRUD::getRequest()->get('clear_'.$this->fieldName);
+        $filesToDelete = CRUD::getRequest()->get('clear_'.($this->parentField ?? $this->fieldName));
 
-        $value = CRUD::getRequest()->file($this->fieldName);
+        $filesToDelete = collect($filesToDelete)->flatten()->toArray();
+
+        $value = $value ?? CRUD::getRequest()->file($this->fieldName);
 
         $previousFiles = $this->get($entry);
-
+      
         if ($filesToDelete) {
             foreach ($previousFiles as $previousFile) {
                 if (in_array($this->getMediaIdentifier($previousFile, $entry), $filesToDelete)) {
