@@ -12,7 +12,7 @@ If you project uses both [Spatie Media Library](https://github.com/spatie/larave
 
 ``` bash
 # require the package
-composer require backpack/media-library-uploads
+composer require "spatie/laravel-medialibrary:^10.0.0"
 
 # prepare the database
 # NOTE: Spatie migration does not come with a `down()` method by default, add one now if you need it
