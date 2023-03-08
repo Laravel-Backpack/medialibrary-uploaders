@@ -37,7 +37,7 @@ abstract class Uploader implements UploaderInterface
     public function __construct(array $field, $definition)
     {
         $this->fieldName = $field['name'];
-        $this->disk = $definition['disk'] ?? $field['disk'] ?? config('backpack.base.root_disk_name');
+        $this->disk = $definition['disk'] ?? $field['disk'] ?? 'public';
         $this->savingEventCallback = $definition['whenSaving'] ?? null;
         $this->temporary = $definition['temporary'] ?? false;
         $this->expiration = $definition['expiration'] ?? 1;
