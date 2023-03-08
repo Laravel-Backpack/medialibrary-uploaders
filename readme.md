@@ -214,4 +214,19 @@ This project was released under MIT, so you can install it on top of any Backpac
 [link-packagist]: https://packagist.org/packages/backpack/media-library-connector
 [link-downloads]: https://packagist.org/packages/backpack/media-library-connector
 [link-author]: https://github.com/backpack
-[link-contributors]: ../../contributors
+[link-contributors]: ../../contributors 
+
+
+# WITHUPLOADS
+
+By default it uses the `public` disk. 
+
+Don't forget to do `php artisan storage:link`.
+
+`withUploads()` accepts only two configurations: `disk` and `path`. 
+
+```php
+CRUD::field('avatar')->type('upload')->withUploads([
+    'path' => 'avatars' // will store the file in `{{DISK_DIRECTORY}}/avatars/file.jpg`
+])
+```
