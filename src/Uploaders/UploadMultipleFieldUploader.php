@@ -41,11 +41,11 @@ class UploadMultipleFieldUploader extends Uploader
 
         foreach ($value ?? [] as $file) {
             if ($file && is_file($file)) {
-                $finalPath = $this->path.$this->getFileName($file).'.'.$this->getExtensionFromFile($file);
+                $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
+           
+                $file->storeAs($this->path, $fileName, $this->disk);
 
-                Storage::disk($this->disk)->put($finalPath, $file);
-
-                $previousFiles[] = $finalPath;
+                $previousFiles[] = $this->path.$fileName;
             }
         }
 
@@ -64,10 +64,10 @@ class UploadMultipleFieldUploader extends Uploader
         foreach ($files as $row => $rowValue) {
             foreach ($rowValue[$this->fieldName] ?? [] as $file) {
                 if ($file && is_file($file)) {
-                    $finalPath = $this->path.$this->getFileName($file).'.'.$this->getExtensionFromFile($file);
-
-                    Storage::disk($this->disk)->put($finalPath, $file);
-                    $fileOrder[$row][] = $finalPath;
+                    $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
+           
+                    $file->storeAs($this->path, $fileName, $this->disk);
+                    $fileOrder[$row][] = $this->path.$fileName;
                 }
             }
         }

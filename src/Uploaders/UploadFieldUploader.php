@@ -22,11 +22,12 @@ class UploadFieldUploader extends Uploader
         $previousFiles = $this->getPreviousRepeatableValues($entry);
 
         foreach ($values as $row => $rowValue) {
-            if (isset($rowValue[$this->fieldName]) && is_file($rowValue[$this->fieldName])) {
-                $finalPath = $this->path.$this->getFileName($rowValue[$this->fieldName]).'.'.$this->getExtensionFromFile($rowValue[$this->fieldName]);
-
-                Storage::disk($this->disk)->put($finalPath, $rowValue[$this->fieldName]);
-                $orderedFiles[$row] = $finalPath;
+            $file = $rowValue[$this->fieldName];
+            if (isset($file) && is_file($file) && $file->isValid()) {
+                $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
+           
+                $file->storeAs($this->path, $fileName, $this->disk);
+                $orderedFiles[$row] = $this->path.$fileName;
 
                 continue;
             }
@@ -63,12 +64,11 @@ class UploadFieldUploader extends Uploader
             if ($previousFile) {
                 Storage::disk($this->disk)->delete($previousFile);
             }
+            $fileName = $this->getFileName($value).'.'.$this->getExtensionFromFile($value);
+           
+            $value->storeAs($this->path, $fileName, $this->disk);
 
-            $finalPath = $this->path.$this->getFileName($value).'.'.$this->getExtensionFromFile($value);
-
-            Storage::disk($this->disk)->put($finalPath, $value);
-
-            return $finalPath;
+            return $this->path.$fileName;
         }
 
         if (! $value && CrudPanelFacade::getRequest()->has($this->fieldName) && $previousFile) {
