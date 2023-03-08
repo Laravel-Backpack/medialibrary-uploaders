@@ -49,7 +49,7 @@ class UploadMultipleFieldUploader extends Uploader
             }
         }
 
-        return $previousFiles;
+        return isset($entry->getCasts()[$this->fieldName]) ? $previousFiles : json_encode($previousFiles);
     }
 
     private function saveRepeatableUploadMultiple($entry)
