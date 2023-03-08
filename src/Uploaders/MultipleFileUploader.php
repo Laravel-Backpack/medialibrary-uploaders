@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 
-class UploadMultipleFieldUploader extends Uploader
+class MultipleFileUploader extends Uploader
 {
     public static function for(array $field, $configuration): self
     {
@@ -16,15 +16,15 @@ class UploadMultipleFieldUploader extends Uploader
 
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable ? $this->saveRepeatableUploadMultiple($entry, $value) : $this->saveUploadMultiple($entry, $value);
+        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableUploadMultiple($entry, $value) : $this->saveUploadMultiple($entry, $value);
     }
 
     private function saveUploadMultiple($entry, $value = null)
     {
         $filesToDelete = request()->get('clear_'.$this->fieldName);
-
-        $value = request()->file($this->fieldName);
-
+        
+        $value = $value ?? request()->file($this->fieldName);
+    
         $previousFiles = $entry->getOriginal($this->fieldName) ?? [];
 
         if(!is_array($previousFiles) && is_string($previousFiles)) {
@@ -56,13 +56,13 @@ class UploadMultipleFieldUploader extends Uploader
         return isset($entry->getCasts()[$this->fieldName]) ? $previousFiles : json_encode($previousFiles);
     }
 
-    private function saveRepeatableUploadMultiple($entry)
+    private function saveRepeatableUploadMultiple($entry, $value)
     {
         $previousFiles = $this->getPreviousRepeatableValues($entry);
 
         $fileOrder = $this->getFromRequestAsArray('_order_', ',');
 
-        $files = CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
+        $files = $value ?? CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
 
         foreach ($files as $row => $rowValue) {
             foreach ($rowValue[$this->fieldName] ?? [] as $file) {

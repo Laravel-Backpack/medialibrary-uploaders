@@ -47,7 +47,7 @@ class RegisterUploadEvents
     private static function handleRepeatableUploads($field, $mediaDefinition)
     {
         $repeatableDefinitions = [];
-
+        
         foreach ($field['subfields'] as $subfield) {
             if (isset($subfield['withMedia']) || isset($subfield['withUploads'])) {
                 $subfield['eventsModel'] = $subfield['baseModel'] ?? $field['eventsModel'];
@@ -63,10 +63,9 @@ class RegisterUploadEvents
                 $repeatableDefinitions[$subfield['eventsModel']][] = $mediaType;
             }
         }
-
+        
         foreach ($repeatableDefinitions as $model => $mediaTypes) {
             $repeatableDefinition = self::$defaultUploaders['repeatable']::for($field, [])->uploads(...$mediaTypes);
-
             static::setupModelEvents($model, $repeatableDefinition);
         }
     }

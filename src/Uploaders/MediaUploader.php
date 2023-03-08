@@ -100,7 +100,7 @@ abstract class MediaUploader extends Uploader
 
     public function processFileUpload(Model $entry)
     {
-        if (is_a($this, \Backpack\MediaLibraryUploads\Uploaders\MediaRepeatableUploads::class) && ! $this->isRelationship) {
+        if (is_a($this, \Backpack\MediaLibraryUploads\Uploaders\MediaRepeatable::class) && ! $this->isRelationship) {
             $entry->{$this->fieldName} = json_encode($this->save($entry));
         } else {
             $this->save($entry);

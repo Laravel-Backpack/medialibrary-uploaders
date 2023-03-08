@@ -7,16 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class ImageFieldUploader extends Uploader
+class SingleBase64Uploader extends Uploader
 {
-    public function save(Model $entry, $values = null)
+    public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable ? $this->saveRepeatableImage($entry, $values) : $this->saveImage($entry, $values);
+        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableImage($entry, $value) : $this->saveImage($entry, $value);
     }
 
-    private function saveImage($entry)
+    private function saveImage($entry, $value)
     {
-        $value = CRUD::getRequest()->get($this->fieldName);
+        $value = $value ?? CRUD::getRequest()->get($this->fieldName);
         $previousImage = $entry->getOriginal($this->fieldName);
 
         if (! $value && $previousImage) {
@@ -41,7 +41,7 @@ class ImageFieldUploader extends Uploader
         return $previousImage;
     }
 
-    private function saveRepeatableImage($entry, $values)
+    private function saveRepeatableImage($entry, $value)
     {
         $previousImages = $this->getPreviousRepeatableValues($entry);
 
@@ -49,13 +49,13 @@ class ImageFieldUploader extends Uploader
             $item = Storage::disk($this->disk)->url($item);
         });
 
-        foreach ($values as $row => $rowValue) {
+        foreach ($value as $row => $rowValue) {
             if ($rowValue) {
                 if (Str::startsWith($rowValue, 'data:image')) {
                     $base64Image = Str::after($rowValue, ';base64,');
                     $finalPath = $this->path.$this->getFileName($rowValue).'.'.$this->getExtensionFromFile($rowValue);
                     Storage::disk($this->disk)->put($finalPath, base64_decode($base64Image));
-                    $values[$row] = $finalPath;
+                    $value[$row] = $finalPath;
                     $previousImages[] = $finalPath;
 
                     continue;
@@ -63,11 +63,11 @@ class ImageFieldUploader extends Uploader
             }
         }
 
-        $imagesToDelete = array_diff($previousImages, $values);
+        $imagesToDelete = array_diff($previousImages, $value);
         foreach ($imagesToDelete as $image) {
             Storage::disk($this->disk)->delete($image);
         }
 
-        return $values;
+        return $value;
     }
 }

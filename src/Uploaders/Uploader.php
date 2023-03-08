@@ -20,8 +20,6 @@ abstract class Uploader implements UploaderInterface
 
     public $disk;
 
-    
-
     public $isMultiple = false;
 
     public $eventsModel;
@@ -42,26 +40,23 @@ abstract class Uploader implements UploaderInterface
         $this->expiration = $configuration['expiration'] ?? 1;
         $this->eventsModel = $field['eventsModel'];
         $this->path = Str::of($configuration['path'] ?? '')->finish('/')->start('/');
-        $this->isRelationship = false;
 
-        $this->setupUploadConfigsInField($field);
+        
     }
 
     abstract public function save(Model $entry, $values = null);
 
     public function processFileUpload(Model $entry)
     {
-        if (is_a($this, \Backpack\MediaLibraryUploads\Uploaders\RepeatableUploads::class)) {
-            $entry->{$this->fieldName} = json_encode($this->save($entry));
-        } else {
-            $entry->{$this->fieldName} = $this->save($entry);
-        }
+        $entry->{$this->fieldName} = $this->save($entry);
 
         return $entry;
     }
 
     public function retrieveUploadedFile(Model $entry)
     {
+        $this->setupUploadConfigsInField(CRUD::field($this->fieldName));
+
         $value = $entry->{$this->fieldName};
 
         if($this->isMultiple && !isset($entry->getCasts()[$this->fieldName]) && is_string($value)) {
@@ -84,7 +79,7 @@ abstract class Uploader implements UploaderInterface
         return $this;
     }
 
-    protected function relationship(bool $isRelationship)
+    public function relationship(bool $isRelationship)
     {
         if ($isRelationship) {
             $this->isRepeatable = false;
@@ -94,7 +89,7 @@ abstract class Uploader implements UploaderInterface
         return $this;
     }
 
-    protected function repeats(string $parentField)
+    public function repeats(string $parentField)
     {
         $this->isRepeatable = true;
 
@@ -134,25 +129,9 @@ abstract class Uploader implements UploaderInterface
 
     private function setupUploadConfigsInField($field)
     {
-        $crudField = CRUD::field($field['parentFieldName'] ?? $field['name']);
-
-        if (isset($field['parentFieldName'])) {
-            $this->isRepeatable = true;
-            $this->parentField = $field['parentFieldName'];
-
-            $subfields = $crudField->getAttributes()['subfields'];
-
-            foreach ($subfields as &$subfield) {
-                if ($subfield['name'] === $this->fieldName) {
-                    $subfield['upload'] = true;
-                    $subfield['disk'] = $field['disk'] ?? $this->disk;
-                    $subfield['prefix'] = $field['prefix'] ?? $field['path'] ?? $this->path;
-                }
-            }
-
-            $crudField->subfields($subfields);
-        } else {
-            $crudField->upload(true)->disk($field['disk'] ?? $this->disk)->prefix($field['prefix'] ?? $field['path'] ?? $this->path);
-        }
+        $attributes = $field->getAttributes();
+        $field->upload(true)
+            ->disk($attributes['disk'] ?? $this->disk)
+            ->prefix($attributes['prefix'] ?? $this->path);
     }
 }

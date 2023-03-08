@@ -6,16 +6,16 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
-class UploadFieldUploader extends Uploader
+class SingleFileUploader extends Uploader
 {
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable ? $this->saveRepeatableUpload($entry, $value) : $this->saveUpload($entry, $value);
+        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableUpload($entry, $value) : $this->saveUpload($entry, $value);
     }
 
-    private function saveRepeatableUpload($entry)
+    private function saveRepeatableUpload($entry, $value)
     {
-        $values = CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
+        $values = $value ?? CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
 
         $orderedFiles = $this->getFromRequestAsArray('_order_');
 
@@ -54,9 +54,9 @@ class UploadFieldUploader extends Uploader
         return $items;
     }
 
-    private function saveUpload($entry)
+    private function saveUpload($entry, $value)
     {
-        $value = CrudPanelFacade::getRequest()->file($this->fieldName);
+        $value = $value ?? CrudPanelFacade::getRequest()->file($this->fieldName);
 
         $previousFile = $entry->getOriginal($this->fieldName);
 
