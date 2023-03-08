@@ -34,14 +34,14 @@ abstract class Uploader implements UploaderInterface
 
     public $isRelationship;
 
-    public function __construct(array $field, $definition)
+    public function __construct(array $field, $configuration)
     {
         $this->fieldName = $field['name'];
-        $this->disk = $definition['disk'] ?? $field['disk'] ?? 'public';
-        $this->temporary = $definition['temporary'] ?? false;
-        $this->expiration = $definition['expiration'] ?? 1;
+        $this->disk = $configuration['disk'] ?? $field['disk'] ?? 'public';
+        $this->temporary = $configuration['temporary'] ?? false;
+        $this->expiration = $configuration['expiration'] ?? 1;
         $this->eventsModel = $field['eventsModel'];
-        $this->path = Str::finish($definition['path'] ?? '', '/');
+        $this->path = Str::of($configuration['path'] ?? '')->finish('/')->start('/');
         $this->isRelationship = false;
 
         $this->setupUploadConfigsInField($field);
