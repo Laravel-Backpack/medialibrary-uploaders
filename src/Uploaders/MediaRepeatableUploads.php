@@ -14,7 +14,7 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
     public function __construct($field)
     {
         $this->fieldName = $field['name'];
-        $this->isRelationship = isset($field['relation_type']) && $field['entity'] !== false; 
+        $this->isRelationship = isset($field['relation_type']) && $field['entity'] !== false;
     }
 
     public function save(Model $entry, $value = null)
@@ -42,9 +42,9 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
     {
         $values = collect(request()->get($this->fieldName));
         $files = collect(request()->file($this->fieldName));
-        
+
         $values = $this->mergeValuesRecursive($values, $files);
-        
+
         $modelCount = CRUD::get('model_count_'.$this->fieldName);
 
         $value = collect($values)->slice($modelCount, 1);
@@ -55,7 +55,6 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
             }
             $entry->offsetUnset($upload->fieldName);
         }
-        
 
         return $entry;
     }
@@ -109,7 +108,7 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
             if (! $media) {
                 continue;
             }
-       
+
             if (empty($entry->mediaConversions)) {
                 $entry->registerAllMediaConversions();
             }
@@ -122,7 +121,7 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
                 })->toArray();
             }
         }
-    
+
         return $entry;
     }
 

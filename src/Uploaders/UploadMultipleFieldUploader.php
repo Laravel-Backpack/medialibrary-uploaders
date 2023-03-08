@@ -60,7 +60,6 @@ class UploadMultipleFieldUploader extends Uploader
     {
         $previousFiles = $this->getPreviousRepeatableValues($entry);
 
-        $filesToDelete = collect($this->getFromRequestAsArray('clear_'))->flatten()->toArray();
         $fileOrder = $this->getFromRequestAsArray('_order_', ',');
 
         $files = CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
@@ -102,16 +101,5 @@ class UploadMultipleFieldUploader extends Uploader
         });
 
         return $items;
-    }
-
-    public function getRepeatableItemsAsArray($entry)
-    {
-        return $this->get($entry)->groupBy('order_column')->transform(function ($media) {
-            $items = $media->map(function ($item) {
-                return $item->getUrl();
-            })->toArray();
-
-            return [$this->fieldName => $items];
-        })->toArray();
     }
 }

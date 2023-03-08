@@ -99,7 +99,7 @@ abstract class Uploader implements UploaderInterface
         $this->isRepeatable = true;
 
         $this->parentField = $parentField;
-        
+
         return $this;
     }
 
@@ -142,18 +142,15 @@ abstract class Uploader implements UploaderInterface
 
             $subfields = $crudField->getAttributes()['subfields'];
 
-            $modifiedSubfields = [];
-            foreach ($subfields as $subfield) {
+            foreach ($subfields as &$subfield) {
                 if ($subfield['name'] === $this->fieldName) {
                     $subfield['upload'] = true;
                     $subfield['disk'] = $field['disk'] ?? $this->disk;
                     $subfield['prefix'] = $field['prefix'] ?? $field['path'] ?? $this->path;
-                    $modifiedSubfields[] = $subfield;
-                    continue;
                 }
-                $modifiedSubfields[] = $subfield;
             }
-            $crudField->subfields($modifiedSubfields);
+
+            $crudField->subfields($subfields);
         } else {
             $crudField->upload(true)->disk($field['disk'] ?? $this->disk)->prefix($field['prefix'] ?? $field['path'] ?? $this->path);
         }

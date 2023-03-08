@@ -22,8 +22,8 @@ class UploadFieldUploader extends Uploader
         $previousFiles = $this->getPreviousRepeatableValues($entry);
 
         foreach ($values as $row => $rowValue) {
-            $file = $rowValue[$this->fieldName];
-            if (isset($file) && is_file($file) && $file->isValid()) {
+            $file = $rowValue[$this->fieldName] ?? null;
+            if ($file && is_file($file) && $file->isValid()) {
                 $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
            
                 $file->storeAs($this->path, $fileName, $this->disk);
