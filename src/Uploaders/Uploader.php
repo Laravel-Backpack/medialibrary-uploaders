@@ -20,7 +20,7 @@ abstract class Uploader implements UploaderInterface
 
     public $disk;
 
-    public $savingEventCallback = null;
+    
 
     public $isMultiple = false;
 
@@ -38,7 +38,6 @@ abstract class Uploader implements UploaderInterface
     {
         $this->fieldName = $field['name'];
         $this->disk = $definition['disk'] ?? $field['disk'] ?? 'public';
-        $this->savingEventCallback = $definition['whenSaving'] ?? null;
         $this->temporary = $definition['temporary'] ?? false;
         $this->expiration = $definition['expiration'] ?? 1;
         $this->eventsModel = $field['eventsModel'];

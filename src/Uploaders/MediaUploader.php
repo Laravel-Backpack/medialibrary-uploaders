@@ -20,12 +20,15 @@ abstract class MediaUploader extends Uploader
 
     public $order;
 
+    public $savingEventCallback = null;
+
     public function __construct(array $field, array $configuration)
     {
         $this->eventsModel = $field['eventsModel'];
 
         $this->collection = $configuration['collection'] ?? 'default';
         $this->mediaName = $configuration['mediaName'] ?? $field['name'];
+        $this->savingEventCallback = $configuration['whenSaving'] ?? null;
 
         $this->displayConversions = $configuration['displayConversions'] ?? [];
         $this->displayConversions = (array) $this->displayConversions;
