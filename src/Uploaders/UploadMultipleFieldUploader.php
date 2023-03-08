@@ -27,6 +27,10 @@ class UploadMultipleFieldUploader extends Uploader
 
         $previousFiles = $entry->getOriginal($this->fieldName) ?? [];
 
+        if(!is_array($previousFiles) && is_string($previousFiles)) {
+            $previousFiles = json_decode($previousFiles, true);
+        }
+
         if ($filesToDelete) {
             foreach ($previousFiles as $previousFile) {
                 if (in_array($previousFile, $filesToDelete)) {
