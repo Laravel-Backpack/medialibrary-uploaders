@@ -26,7 +26,6 @@ class MediaRepeatableUploads extends MediaUploader implements RepeatableUploader
     {
         $values = collect(request()->get($this->fieldName));
         foreach ($this->repeatableUploads as $upload) {
-            //dd($upload, $values);
             $upload->save($entry, $values->pluck($upload->fieldName)->toArray());
 
             $values->transform(function ($item) use ($upload) {
