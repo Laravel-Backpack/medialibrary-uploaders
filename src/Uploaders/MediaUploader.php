@@ -43,9 +43,7 @@ abstract class MediaUploader extends Uploader
         
         $configuration['disk'] = empty($configuration['disk']) ? $field['disk'] ?? config('media-library.disk_name') : null;
         
-        parent::__construct($field, $configuration);
-        //dd($this);
-        
+        parent::__construct($field, $configuration);        
     }
 
     abstract public function save(Model $entry, $value = null);
