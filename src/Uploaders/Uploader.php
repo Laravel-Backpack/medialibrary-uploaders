@@ -42,12 +42,8 @@ abstract class Uploader implements UploaderInterface
         $this->temporary = $definition['temporary'] ?? false;
         $this->expiration = $definition['expiration'] ?? 1;
         $this->eventsModel = $field['eventsModel'];
-        $this->path = $definition['path'] ?? '';
+        $this->path = Str::finish($definition['path'] ?? '', '/');
         $this->isRelationship = false;
-
-        if (! empty($this->path) && ! Str::endsWith($this->path, '/')) {
-            $this->path = $this->path.'/';
-        }
 
         $this->setupUploadConfigsInField($field);
     }
