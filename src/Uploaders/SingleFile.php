@@ -10,21 +10,18 @@ class SingleFile extends Uploader
 {
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableUpload($entry, $value) : $this->saveUpload($entry, $value);
+        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableFile($entry, $value) : $this->saveFile($entry, $value);
     }
 
-    private function saveRepeatableUpload($entry, $value)
+    private function saveRepeatableFile($entry, $values)
     {
-        $values = $value ?? CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
-
-        $orderedFiles = $this->getFromRequestAsArray('_order_');
+        $orderedFiles = $this->getFileOrderFromRequest();
 
         $previousFiles = $this->getPreviousRepeatableValues($entry);
 
-        foreach ($values as $row => $rowValue) {
-            $file = $rowValue[$this->fieldName] ?? null;
+        foreach ($values as $row => $file) {
             if ($file && is_file($file) && $file->isValid()) {
-                $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
+                $fileName = $this->getFileNameWithExtension($file);
 
                 $file->storeAs($this->path, $fileName, $this->disk);
                 $orderedFiles[$row] = $this->path.$fileName;
@@ -43,18 +40,7 @@ class SingleFile extends Uploader
         return $orderedFiles;
     }
 
-    private function getFromRequestAsArray(string $key): array
-    {
-        $items = CrudPanelFacade::getRequest()->input($key.$this->parentField) ?? [];
-
-        array_walk($items, function (&$key, $value) {
-            $key = $key[$this->fieldName] ?? null;
-        });
-
-        return $items;
-    }
-
-    private function saveUpload($entry, $value)
+    private function saveFile($entry, $value)
     {
         $value = $value ?? CrudPanelFacade::getRequest()->file($this->fieldName);
 
@@ -64,7 +50,7 @@ class SingleFile extends Uploader
             if ($previousFile) {
                 Storage::disk($this->disk)->delete($previousFile);
             }
-            $fileName = $this->getFileName($value).'.'.$this->getExtensionFromFile($value);
+            $fileName = $this->getFileNameWithExtension($value);
 
             $value->storeAs($this->path, $fileName, $this->disk);
 

@@ -8,7 +8,7 @@ interface RepeatableUploaderInterface
 {
     public function uploads(...$uploads): self;
 
-    public static function for(array $field): self;
+    public static function for(array $field);
 
     public function processFileUpload(Model $entry);
 

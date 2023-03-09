@@ -2,24 +2,23 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
-use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 
 class MultipleFiles extends Uploader
 {
-    public static function for(array $field, $configuration): self
+    public static function for(array $field, $configuration): static
     {
         return (new static($field, $configuration))->multiple();
     }
 
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableUploadMultiple($entry, $value) : $this->saveUploadMultiple($entry, $value);
+        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableMutipleFiles($entry, $value) : $this->saveMultipleFiles($entry, $value);
     }
 
-    private function saveUploadMultiple($entry, $value = null)
+    private function saveMultipleFiles($entry, $value = null)
     {
         $filesToDelete = request()->get('clear_'.$this->fieldName);
 
@@ -45,7 +44,7 @@ class MultipleFiles extends Uploader
 
         foreach ($value ?? [] as $file) {
             if ($file && is_file($file)) {
-                $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
+                $fileName = $this->getFileNameWithExtension($file);
 
                 $file->storeAs($this->path, $fileName, $this->disk);
 
@@ -56,18 +55,16 @@ class MultipleFiles extends Uploader
         return isset($entry->getCasts()[$this->fieldName]) ? $previousFiles : json_encode($previousFiles);
     }
 
-    private function saveRepeatableUploadMultiple($entry, $value)
+    private function saveRepeatableMutipleFiles($entry, $files)
     {
         $previousFiles = $this->getPreviousRepeatableValues($entry);
 
-        $fileOrder = $this->getFromRequestAsArray('_order_', ',');
+        $fileOrder = $this->getFileOrderFromRequest();
 
-        $files = $value ?? CrudPanelFacade::getRequest()->file($this->parentField) ?? [];
-
-        foreach ($files as $row => $rowValue) {
-            foreach ($rowValue[$this->fieldName] ?? [] as $file) {
+        foreach ($files as $row => $files) {
+            foreach ($files ?? [] as $file) {
                 if ($file && is_file($file)) {
-                    $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
+                    $fileName = $this->getFileNameWithExtension($file);
 
                     $file->storeAs($this->path, $fileName, $this->disk);
                     $fileOrder[$row][] = $this->path.$fileName;
@@ -76,7 +73,7 @@ class MultipleFiles extends Uploader
         }
 
         foreach ($previousFiles as $previousRow => $files) {
-            foreach ($files as $key => $file) {
+            foreach ($files ?? [] as $key => $file) {
                 $key = array_search($file, $fileOrder, true);
                 if ($key === false) {
                     Storage::disk($this->disk)->delete($file);
@@ -85,21 +82,5 @@ class MultipleFiles extends Uploader
         }
 
         return $fileOrder;
-    }
-
-    private function getFromRequestAsArray(string $key, $delimiter = null): array
-    {
-        $items = CrudPanelFacade::getRequest()->input($key.$this->parentField) ?? [];
-
-        array_walk($items, function (&$key, $value) use ($delimiter) {
-            $requestValue = $key[$this->fieldName] ?? null;
-            if (is_string($requestValue) && $delimiter) {
-                $key = explode($delimiter, $requestValue);
-            } else {
-                $key = $requestValue;
-            }
-        });
-
-        return $items;
     }
 }

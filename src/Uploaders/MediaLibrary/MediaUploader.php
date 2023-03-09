@@ -1,6 +1,6 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads\Uploaders;
+namespace Backpack\MediaLibraryUploads\Uploaders\MediaLibrary;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
+use Backpack\MediaLibraryUploads\Uploaders\Uploader;
 
 abstract class MediaUploader extends Uploader
 {
@@ -42,7 +43,9 @@ abstract class MediaUploader extends Uploader
         $configuration['disk'] = $modelDefinition?->diskName ?? null;
         
         $configuration['disk'] = empty($configuration['disk']) ? $field['disk'] ?? config('media-library.disk_name') : null;
-        
+        // read https://spatie.be/docs/laravel-medialibrary/v10/advanced-usage/using-a-custom-directory-structure#main 
+        // on how to customize file directory
+        $field['prefix'] = $configuration['path'] =  '';
         parent::__construct($field, $configuration);        
     }
 
@@ -55,7 +58,7 @@ abstract class MediaUploader extends Uploader
         })->sortBy('order_column')->keyBy('order_column')->toArray();
     }
 
-    protected function getPreviousRepeatableValues(Model $entry)
+    public function getPreviousRepeatableValues(Model $entry)
     {
         if ($this->isMultiple) {
             return $this->get($entry)
@@ -112,6 +115,8 @@ abstract class MediaUploader extends Uploader
 
     public function retrieveUploadedFile(Model $entry)
     {
+        $this->setupUploadConfigsInField(CRUD::field($this->fieldName));
+
         $media = $this->get($entry);
        
         if (! $media) {
@@ -141,7 +146,7 @@ abstract class MediaUploader extends Uploader
 
         $fileAdder = $fileAdder->usingName($this->mediaName)
                                 ->withCustomProperties($this->getCustomProperties())
-                                ->usingFileName($this->getFileName($file).'.'.$this->getExtensionFromFile($file));
+                                ->usingFileName($this->getFileNameWithExtension($file));
 
         $constrainedMedia = new ConstrainedFileAdder();
         $constrainedMedia->setFileAdder($fileAdder);
@@ -163,7 +168,7 @@ abstract class MediaUploader extends Uploader
         return ['fieldName' => $this->fieldName, 'parentField' => $this->parentField, 'repeatableRow' => $this->order];
     }
 
-    protected function getMediaIdentifier($media, $entry = null)
+    public function getMediaIdentifier($media, $entry = null)
     {
         $path = PathGeneratorFactory::create($media);
 

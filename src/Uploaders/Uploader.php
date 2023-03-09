@@ -67,7 +67,7 @@ abstract class Uploader implements UploaderInterface
         return $entry;
     }
 
-    public static function for(array $field, $definition): self
+    public static function for(array $field, $definition)
     {
         return new static($field, $definition);
     }
@@ -98,13 +98,16 @@ abstract class Uploader implements UploaderInterface
         return $this;
     }
 
-    protected function getFileName($file)
+    protected function getFileOrderFromRequest()
     {
-        if (is_file($file)) {
-            return Str::of($this->fileName ?? Str::beforeLast($file->getClientOriginalName(), '.'))->slug()->append('-'.Str::random(4));
-        }
+        $items = CRUD::getRequest()->input('_order_'.$this->parentField) ?? [];
 
-        return Str::of($this->fileName ?? Str::random(40))->slug();
+        array_walk($items, function (&$key, $value) {
+            $requestValue = $key[$this->fieldName] ?? null;
+            $key = $this->isMultiple ? (is_string($requestValue) ? explode(',', $requestValue) : $requestValue) : $requestValue;
+        });
+
+        return $items;
     }
 
     protected function modelInstance()
@@ -127,7 +130,25 @@ abstract class Uploader implements UploaderInterface
         return is_a($file, UploadedFile::class, true) ? $file->extension() : Str::after(mime_content_type($file), '/');
     }
 
-    private function setupUploadConfigsInField($field)
+    protected function getFileName($file)
+    {
+        if (is_file($file)) {
+            return Str::of($this->fileName ?? Str::of($file->getClientOriginalName())->beforeLast('.')->slug()->append('-'.Str::random(4)));
+        }
+
+        return Str::of($this->fileName ?? Str::random(40));
+    }
+
+    protected function getFileNameWithExtension($file)
+    {
+        if (is_file($file)) {
+            return Str::of($this->fileName ?? Str::of($file->getClientOriginalName())->beforeLast('.')->slug()->append('-'.Str::random(4))).'.'.$this->getExtensionFromFile($file);
+        }
+
+        return Str::of($this->fileName ?? Str::random(40)).'.'.$this->getExtensionFromFile($file);
+    }
+
+    protected function setupUploadConfigsInField($field)
     {
         $attributes = $field->getAttributes();
         $field->upload(true)

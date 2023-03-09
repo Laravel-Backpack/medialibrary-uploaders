@@ -1,12 +1,12 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads\Uploaders;
+namespace Backpack\MediaLibraryUploads\Uploaders\MediaLibrary;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 
-class MediaUploadFieldUploader extends MediaUploader
+class MediaSingleFile extends MediaUploader
 {
     public function save(Model $entry, $value = null)
     {

@@ -7,14 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class SingleBase64 extends Uploader
+class SingleBase64Image extends Uploader
 {
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableImage($entry, $value) : $this->saveImage($entry, $value);
+        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableSingleBase64($entry, $value) : $this->saveSingleBase64($entry, $value);
     }
 
-    private function saveImage($entry, $value)
+    private function saveSingleBase64($entry, $value)
     {
         $value = $value ?? CRUD::getRequest()->get($this->fieldName);
         $previousImage = $entry->getOriginal($this->fieldName);
@@ -32,7 +32,8 @@ class SingleBase64 extends Uploader
 
             $base64Image = Str::after($value, ';base64,');
 
-            $finalPath = $this->path.$this->getFileName($value).'.'.$this->getExtensionFromFile($value);
+            $finalPath = $this->path.$this->getFileNameWithExtension($value);
+            
             Storage::disk($this->disk)->put($finalPath, base64_decode($base64Image));
 
             return $finalPath;
@@ -41,7 +42,7 @@ class SingleBase64 extends Uploader
         return $previousImage;
     }
 
-    private function saveRepeatableImage($entry, $value)
+    private function saveRepeatableSingleBase64($entry, $value)
     {
         $previousImages = $this->getPreviousRepeatableValues($entry);
 
@@ -49,10 +50,9 @@ class SingleBase64 extends Uploader
             if ($rowValue) {
                 if (Str::startsWith($rowValue, 'data:image')) {
                     $base64Image = Str::after($rowValue, ';base64,');
-                    $finalPath = $this->path.$this->getFileName($rowValue).'.'.$this->getExtensionFromFile($rowValue);
+                    $finalPath = $this->path.$this->getFileNameWithExtension($rowValue);
                     Storage::disk($this->disk)->put($finalPath, base64_decode($base64Image));
-                    $value[$row] = $finalPath;
-                    $previousImages[] = $finalPath;
+                    $value[$row] = $previousImages[] = $finalPath;
 
                     continue;
                 }

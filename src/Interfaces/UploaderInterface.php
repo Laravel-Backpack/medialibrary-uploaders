@@ -10,5 +10,5 @@ interface UploaderInterface
 
     public function retrieveUploadedFile(Model $entry);
 
-    public static function for(array $field, $definition): self;
+    public static function for(array $field, $definition);
 }

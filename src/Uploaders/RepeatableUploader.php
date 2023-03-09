@@ -7,7 +7,7 @@ use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
 use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Illuminate\Database\Eloquent\Model;
 
-abstract class RepeatableUploader implements RepeatableUploaderInterface
+class RepeatableUploader implements RepeatableUploaderInterface
 {
     public $fieldName;
 
@@ -15,22 +15,16 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
 
     public $isRelationship;
 
-    abstract public function saveRepeatableCallback($entry, $upload, $values);
-
-    abstract public function saveRelationshipCallback($entry, $upload, $value, $row);
-
-    abstract public function retrieveFromRelationshipCallback($entry, $upload);
-
-    abstract public function retrieveFromRepeatableCallback($entry);
-
     public function __construct(array $field)
     {
         $this->fieldName = $field['name'];
-        $this->isRelationship = isset($field['relation_type']) && $field['entity'] !== false;
     }
 
-    public static function for(array $field): self
+    public static function for(array $field)
     {
+        if(isset($field['relation_type']) && $field['entity'] !== false) {
+            return new RepeatableRelationship($field);
+        }
         return new static($field);
     }
 
@@ -40,7 +34,7 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
             if (! is_a($upload, UploaderInterface::class)) {
                 throw new \Exception('Uploads must be an instance of UploaderInterface.');
             }
-            $this->repeatableUploads[] = $upload->repeats($this->fieldName)->relationship($this->isRelationship);
+            $this->repeatableUploads[] = $upload->repeats($this->fieldName)->relationship($this->isRelationship ?? false);
         }
 
         $this->setupSubfieldsUploadSettings();
@@ -48,19 +42,31 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
         return $this;
     }
 
-    private function save(Model $entry, $value = null)
-    {
-        return $this->isRelationship ? $this->saveRelationship($entry, $value) : $this->saveRepeatable($entry, $value);
-    }
-
-    private function saveRepeatable($entry)
+    public function save(Model $entry, $value = null)
     {
         $values = collect(request()->get($this->fieldName));
+        $files = collect(request()->file($this->fieldName));
+
+        $value = $this->mergeValuesRecursive($values, $files);
+
         foreach ($this->repeatableUploads as $upload) {
-            $values = $this->saveRepeatableCallback($entry, $upload, $values);
+            $value = $this->performSave($entry, $upload, $value);
         }
 
-        return $values;
+        return $value;
+    }
+
+    protected function performSave($entry, $upload, $value, $row = null)
+    {
+        $uploadedValues = $upload->save($entry, $value->pluck($upload->fieldName)->toArray());
+
+        $value = $value->map(function ($item, $key) use ($upload, $uploadedValues) {
+            $item[$upload->fieldName] = $uploadedValues[$key] ?? null;
+
+            return $item;
+        });
+
+        return $value;
     }
 
     private function setupSubfieldsUploadSettings()
@@ -88,24 +94,6 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
         $crudField->subfields($subfields);
     }
 
-    private function saveRelationship($entry)
-    {
-        $values = collect(request()->get($this->fieldName));
-        $files = collect(request()->file($this->fieldName));
-
-        $values = $this->mergeValuesRecursive($values, $files);
-
-        $modelCount = CRUD::get('model_count_'.$this->fieldName);
-
-        $value = collect($values)->slice($modelCount, 1);
-
-        foreach ($this->repeatableUploads as $upload) {
-            $entry = $this->saveRelationshipCallback($entry, $upload, $value, $modelCount);
-        }
-
-        return $entry;
-    }
-
     public function processFileUpload(Model $entry)
     {
         if (! $this->isRelationship) {
@@ -119,22 +107,14 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
 
     public function retrieveUploadedFile(Model $entry)
     {
-        return $this->isRelationship ? $this->retrieveFromRelationship($entry) : $this->retrieveFromRepeatable($entry);
-    }
-
-    private function retrieveFromRepeatable($entry)
-    {
-        $entry = $this->retrieveFromRepeatableCallback($entry);
-
+        foreach($this->repeatableUploads as $upload) {
+            $entry = $this->retrieveFiles($entry, $upload);
+        }
         return $entry;
     }
 
-    private function retrieveFromRelationship($entry)
+    protected function retrieveFiles($entry, $upload)
     {
-        foreach ($this->repeatableUploads as $upload) {
-            $this->retrieveFromRelationshipCallback($entry, $upload);
-        }
-
         return $entry;
     }
 

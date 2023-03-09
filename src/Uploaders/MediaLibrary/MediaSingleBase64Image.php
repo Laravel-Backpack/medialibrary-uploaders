@@ -1,23 +1,24 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads\Uploaders;
+namespace Backpack\MediaLibraryUploads\Uploaders\MediaLibrary;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class MediaImageFieldUploader extends MediaUploader
+class MediaSingleBase64Image extends MediaUploader
 {
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableImage($entry, $value) : $this->saveImage($entry, $value);
+        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableSingleBase64Image($entry, $value) : $this->saveSingleBase64Image($entry, $value);
     }
 
-    private function saveImage($entry, $value = null): void
+    private function saveSingleBase64Image($entry, $value = null): void
     {
+        dump($value);
         $value = $value ?? CrudPanelFacade::getRequest()->get($this->fieldName);
-        
+        dump($value);
         $previousImage = $this->get($entry);
         
         if (! $value && $previousImage) {
@@ -35,7 +36,7 @@ class MediaImageFieldUploader extends MediaUploader
         }
     }
 
-    private function saveRepeatableImage($entry, $value): void
+    private function saveRepeatableSingleBase64Image($entry, $value): void
     {
         $previousImages = array_column($this->getPreviousRepeatableMedia($entry),$this->fieldName);
     

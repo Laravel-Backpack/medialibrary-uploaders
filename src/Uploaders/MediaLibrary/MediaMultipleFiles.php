@@ -1,11 +1,11 @@
 <?php
 
-namespace Backpack\MediaLibraryUploads\Uploaders;
+namespace Backpack\MediaLibraryUploads\Uploaders\MediaLibrary;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Database\Eloquent\Model;
 
-class MediaUploadMultipleFieldUploader extends MediaUploader
+class MediaMultipleFiles extends MediaUploader
 {
     public static function for(array $field, $configuration): self
     {
