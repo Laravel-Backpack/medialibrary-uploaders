@@ -6,18 +6,21 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
 use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
 
 abstract class RepeatableUploader implements RepeatableUploaderInterface
 {
     public $fieldName;
+
     public $repeatableUploads;
+
     public $isRelationship;
 
     abstract public function saveRepeatableCallback($entry, $upload, $values);
+
     abstract public function saveRelationshipCallback($entry, $upload, $value, $row);
+
     abstract public function retrieveFromRelationshipCallback($entry, $upload);
+
     abstract public function retrieveFromRepeatableCallback($entry);
 
     public function __construct(array $field)
@@ -45,7 +48,7 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
         return $this;
     }
 
-    public function save(Model $entry, $value = null)
+    private function save(Model $entry, $value = null)
     {
         return $this->isRelationship ? $this->saveRelationship($entry, $value) : $this->saveRepeatable($entry, $value);
     }
@@ -56,10 +59,12 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
         foreach ($this->repeatableUploads as $upload) {
             $values = $this->saveRepeatableCallback($entry, $upload, $values);
         }
+
         return $values;
     }
 
-    private function setupSubfieldsUploadSettings() {
+    private function setupSubfieldsUploadSettings()
+    {
         $crudField = CRUD::field($this->fieldName);
 
         $subfields = collect($crudField->getAttributes()['subfields']);
@@ -68,7 +73,7 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
                 $uploader = array_filter($this->repeatableUploads, function ($item) {
                     return $item->fieldName !== $this->fieldName;
                 })[0];
-
+                $item['upload'] = true;
                 $item['disk'] = $uploader->disk;
                 $item['prefix'] = $uploader->path;
                 if ($uploader->temporary) {
@@ -87,17 +92,17 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
     {
         $values = collect(request()->get($this->fieldName));
         $files = collect(request()->file($this->fieldName));
-        
+
         $values = $this->mergeValuesRecursive($values, $files);
 
         $modelCount = CRUD::get('model_count_'.$this->fieldName);
 
         $value = collect($values)->slice($modelCount, 1);
-    
+
         foreach ($this->repeatableUploads as $upload) {
             $entry = $this->saveRelationshipCallback($entry, $upload, $value, $modelCount);
         }
-       
+
         return $entry;
     }
 
@@ -108,7 +113,7 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
         } else {
             $entry = $this->save($entry);
         }
-        
+
         return $entry;
     }
 
@@ -120,13 +125,14 @@ abstract class RepeatableUploader implements RepeatableUploaderInterface
     private function retrieveFromRepeatable($entry)
     {
         $entry = $this->retrieveFromRepeatableCallback($entry);
+
         return $entry;
     }
 
     private function retrieveFromRelationship($entry)
     {
         foreach ($this->repeatableUploads as $upload) {
-           $this->retrieveFromRelationshipCallback($entry, $upload);
+            $this->retrieveFromRelationshipCallback($entry, $upload);
         }
 
         return $entry;

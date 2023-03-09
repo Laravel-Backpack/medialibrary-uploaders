@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 
-class MultipleFileUploader extends Uploader
+class MultipleFiles extends Uploader
 {
     public static function for(array $field, $configuration): self
     {
@@ -22,12 +22,12 @@ class MultipleFileUploader extends Uploader
     private function saveUploadMultiple($entry, $value = null)
     {
         $filesToDelete = request()->get('clear_'.$this->fieldName);
-        
+
         $value = $value ?? request()->file($this->fieldName);
-    
+
         $previousFiles = $entry->getOriginal($this->fieldName) ?? [];
 
-        if(!is_array($previousFiles) && is_string($previousFiles)) {
+        if (! is_array($previousFiles) && is_string($previousFiles)) {
             $previousFiles = json_decode($previousFiles, true);
         }
 
@@ -46,7 +46,7 @@ class MultipleFileUploader extends Uploader
         foreach ($value ?? [] as $file) {
             if ($file && is_file($file)) {
                 $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
-           
+
                 $file->storeAs($this->path, $fileName, $this->disk);
 
                 $previousFiles[] = $this->path.$fileName;
@@ -68,7 +68,7 @@ class MultipleFileUploader extends Uploader
             foreach ($rowValue[$this->fieldName] ?? [] as $file) {
                 if ($file && is_file($file)) {
                     $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
-           
+
                     $file->storeAs($this->path, $fileName, $this->disk);
                     $fileOrder[$row][] = $this->path.$fileName;
                 }

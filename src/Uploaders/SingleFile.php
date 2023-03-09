@@ -6,7 +6,7 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
-class SingleFileUploader extends Uploader
+class SingleFile extends Uploader
 {
     public function save(Model $entry, $value = null)
     {
@@ -25,7 +25,7 @@ class SingleFileUploader extends Uploader
             $file = $rowValue[$this->fieldName] ?? null;
             if ($file && is_file($file) && $file->isValid()) {
                 $fileName = $this->getFileName($file).'.'.$this->getExtensionFromFile($file);
-           
+
                 $file->storeAs($this->path, $fileName, $this->disk);
                 $orderedFiles[$row] = $this->path.$fileName;
 
@@ -65,7 +65,7 @@ class SingleFileUploader extends Uploader
                 Storage::disk($this->disk)->delete($previousFile);
             }
             $fileName = $this->getFileName($value).'.'.$this->getExtensionFromFile($value);
-           
+
             $value->storeAs($this->path, $fileName, $this->disk);
 
             return $this->path.$fileName;

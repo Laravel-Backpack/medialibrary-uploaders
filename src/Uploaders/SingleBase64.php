@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class SingleBase64Uploader extends Uploader
+class SingleBase64 extends Uploader
 {
     public function save(Model $entry, $value = null)
     {
@@ -45,10 +45,6 @@ class SingleBase64Uploader extends Uploader
     {
         $previousImages = $this->getPreviousRepeatableValues($entry);
 
-        array_walk($previousImages, function (&$item) {
-            $item = Storage::disk($this->disk)->url($item);
-        });
-
         foreach ($value as $row => $rowValue) {
             if ($rowValue) {
                 if (Str::startsWith($rowValue, 'data:image')) {
@@ -64,6 +60,7 @@ class SingleBase64Uploader extends Uploader
         }
 
         $imagesToDelete = array_diff($previousImages, $value);
+
         foreach ($imagesToDelete as $image) {
             Storage::disk($this->disk)->delete($image);
         }

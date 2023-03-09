@@ -58,11 +58,12 @@ abstract class Uploader implements UploaderInterface
 
         $value = $entry->{$this->fieldName};
 
-        if($this->isMultiple && !isset($entry->getCasts()[$this->fieldName]) && is_string($value)) {
+        if ($this->isMultiple && ! isset($entry->getCasts()[$this->fieldName]) && is_string($value)) {
             $entry->{$this->fieldName} = json_decode($value, true);
-        }else{
+        } else {
             $entry->{$this->fieldName} = Str::after($value, $this->path);
         }
+
         return $entry;
     }
 
