@@ -39,9 +39,8 @@ abstract class Uploader implements UploaderInterface
         $this->temporary = $configuration['temporary'] ?? false;
         $this->expiration = $configuration['expiration'] ?? 1;
         $this->eventsModel = $field['eventsModel'];
-        $this->path = Str::of($configuration['path'] ?? '')->finish('/')->start('/');
-
-        
+        $this->path = $configuration['path'] ?? $field['prefix'] ?? '';
+        $this->path = empty($this->path) ? $this->path : Str::of($this->path)->finish('/');
     }
 
     abstract public function save(Model $entry, $values = null);
