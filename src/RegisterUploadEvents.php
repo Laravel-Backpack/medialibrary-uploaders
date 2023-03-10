@@ -5,6 +5,8 @@ namespace Backpack\MediaLibraryUploads;
 use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
 use Backpack\CRUD\app\Library\CrudPanel\CrudField;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
+use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
+use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Exception;
 
 class RegisterUploadEvents
@@ -43,8 +45,8 @@ class RegisterUploadEvents
         }
 
         if (! isset($attributes['subfields'])) {
-            $mediaType = self::getUploaderFromField($attributes, $uploadDefinition ?? []);
-            self::setupModelEvents($attributes['entryClass'], $mediaType);
+            $uploaderType = self::getUploader($attributes, $uploadDefinition ?? []);
+            self::setupModelEvents($attributes['entryClass'], $uploaderType);
 
             return;
         }
@@ -52,7 +54,15 @@ class RegisterUploadEvents
         self::handleRepeatableUploads($attributes, $uploadDefinition ?? []);
     }
 
-    private static function setupModelEvents($model, $uploader): void
+    /**
+     * Register the saving and retrieved events on model to handle the upload process.
+     * In case of CrudColumn we only register the retrieved event. 
+     *
+     * @param string $model
+     * @param UploaderInterface|RepeatableUploaderInterface $uploader
+     * @return void
+     */
+    private static function setupModelEvents(string $model, UploaderInterface|RepeatableUploaderInterface $uploader): void
     {
         if ($uploader->crudObjectType === 'field') {
             $model::saving(function ($entry) use ($uploader) {
@@ -71,14 +81,22 @@ class RegisterUploadEvents
         });
     }
 
-    private static function handleRepeatableUploads($field, $uploadDefinition)
+    /**
+     * Handles the use case when the events need to be setup on subfields (Repeatable fields/columns)
+     * We will configure the subfields accordingly before setting up the entry events for uploads.
+     *
+     * @param array $crudObject
+     * @param array $uploadDefinition
+     * @return void
+     */
+    private static function handleRepeatableUploads(array $crudObject, array $uploadDefinition)
     {
         $repeatableDefinitions = [];
 
-        foreach ($field['subfields'] as $subfield) {
+        foreach ($crudObject['subfields'] as $subfield) {
             if (isset($subfield['withMedia']) || isset($subfield['withUploads'])) {
-                $subfield['entryClass'] = $subfield['baseModel'] ?? $field['entryClass'];
-                $subfield['crudObjectType'] = $field['crudObjectType'];
+                $subfield['entryClass'] = $subfield['baseModel'] ?? $crudObject['entryClass'];
+                $subfield['crudObjectType'] = $crudObject['crudObjectType'];
 
                 $subfielduploadDefinition = $subfield['withUploads'] ?? $subfield['withMedia'];
 
@@ -86,28 +104,41 @@ class RegisterUploadEvents
                                                 array_merge($uploadDefinition, $subfielduploadDefinition) :
                                                 $uploadDefinition;
 
-                $mediaType = static::getUploaderFromField($subfield, $subfielduploadDefinition);
+                $uploaderType = static::getUploader($subfield, $subfielduploadDefinition);
 
-                $repeatableDefinitions[$subfield['entryClass']][] = $mediaType;
+                $repeatableDefinitions[$subfield['entryClass']][] = $uploaderType;
             }
         }
 
-        foreach ($repeatableDefinitions as $model => $mediaTypes) {
-            $repeatableDefinition = self::$defaultUploaders['repeatable']::for($field)->uploads(...$mediaTypes);
+        foreach ($repeatableDefinitions as $model => $uploaderTypes) {
+            $repeatableDefinition = self::$defaultUploaders['repeatable']::for($crudObject)->uploads(...$uploaderTypes);
             static::setupModelEvents($model, $repeatableDefinition);
         }
     }
 
-    private static function getUploaderFromField($field, $uploadDefinition)
+    /**
+     * Return the uploader for the object beeing configured.
+     * We will give priority to any uploader provided by `uploader => App\SomeUploaderClass` on upload definition.
+     * 
+     * If none provided, we will use the Backpack defaults for the given object type.
+     * 
+     * Throws an exception in case no uploader for the given object type is found.
+     *
+     * @param array $crudObject
+     * @param array $uploadDefinition
+     * @return UploaderInterface|ReatableUploaderInterface
+     * @throws Exception
+     */
+    private static function getUploader(array $crudObject, array $uploadDefinition)
     {
         if (isset($uploadDefinition['uploaderType'])) {
-            return $uploadDefinition['uploaderType']::for($field, $uploadDefinition);
+            return $uploadDefinition['uploaderType']::for($crudObject, $uploadDefinition);
         }
 
-        if (isset(self::$defaultUploaders[$field['type']])) {
-            return self::$defaultUploaders[$field['type']]::for($field, $uploadDefinition);
+        if (isset(self::$defaultUploaders[$crudObject['type']])) {
+            return self::$defaultUploaders[$crudObject['type']]::for($crudObject, $uploadDefinition);
         }
 
-        throw new Exception('Undefined upload type for field type: '.$field['type']);
+        throw new Exception('Undefined upload type for '.$crudObject['crudObjectType'].' type: '.$crudObject['type']);
     }
 }
