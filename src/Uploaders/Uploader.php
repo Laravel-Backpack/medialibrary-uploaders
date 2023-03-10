@@ -22,7 +22,7 @@ abstract class Uploader implements UploaderInterface
 
     public $isMultiple = false;
 
-    public $eventsModel;
+    public $entryClass;
 
     public $path;
 
@@ -40,7 +40,7 @@ abstract class Uploader implements UploaderInterface
         $this->disk = $configuration['disk'] ?? $crudObject['disk'] ?? 'public';
         $this->temporary = $configuration['temporary'] ?? false;
         $this->expiration = $configuration['expiration'] ?? 1;
-        $this->eventsModel = $crudObject['eventsModel'];
+        $this->entryClass = $crudObject['entryClass'];
         $this->path = $configuration['path'] ?? $crudObject['prefix'] ?? '';
         $this->path = empty($this->path) ? $this->path : Str::of($this->path)->finish('/');
         $this->crudObjectType = $crudObject['crudObjectType'];
@@ -115,7 +115,7 @@ abstract class Uploader implements UploaderInterface
 
     protected function modelInstance()
     {
-        return new $this->eventsModel;
+        return new $this->entryClass;
     }
 
     protected function getPreviousRepeatableValues(Model $entry)

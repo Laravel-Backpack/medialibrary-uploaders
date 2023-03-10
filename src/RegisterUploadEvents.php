@@ -26,7 +26,7 @@ class RegisterUploadEvents
 
         $attributes = $crudObject->getAttributes();
 
-        $attributes['eventsModel'] = $attributes['model'] ?? get_class($crudObject->crud()->getModel());
+        $attributes['entryClass'] = $attributes['model'] ?? get_class($crudObject->crud()->getModel());
 
         // we use this check because `MyCustomField extends CrudField` is still a CrudField instance.
         $crudObjectType = is_a($crudObject, CrudField::class) ? CrudField::class : (is_a($crudObject, CrudColumn::class) ? CrudColumn::class : null);
@@ -44,7 +44,7 @@ class RegisterUploadEvents
 
         if (! isset($attributes['subfields'])) {
             $mediaType = self::getUploaderFromField($attributes, $uploadDefinition ?? []);
-            self::setupModelEvents($attributes['eventsModel'], $mediaType);
+            self::setupModelEvents($attributes['entryClass'], $mediaType);
 
             return;
         }
@@ -77,7 +77,7 @@ class RegisterUploadEvents
 
         foreach ($field['subfields'] as $subfield) {
             if (isset($subfield['withMedia']) || isset($subfield['withUploads'])) {
-                $subfield['eventsModel'] = $subfield['baseModel'] ?? $field['eventsModel'];
+                $subfield['entryClass'] = $subfield['baseModel'] ?? $field['entryClass'];
                 $subfield['crudObjectType'] = $field['crudObjectType'];
 
                 $subfielduploadDefinition = $subfield['withUploads'] ?? $subfield['withMedia'];
@@ -88,7 +88,7 @@ class RegisterUploadEvents
 
                 $mediaType = static::getUploaderFromField($subfield, $subfielduploadDefinition);
 
-                $repeatableDefinitions[$subfield['eventsModel']][] = $mediaType;
+                $repeatableDefinitions[$subfield['entryClass']][] = $mediaType;
             }
         }
 

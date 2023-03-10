@@ -24,7 +24,7 @@ abstract class MediaUploader extends Uploader
 
     public function __construct(array $crudObject, array $configuration)
     {
-        $this->eventsModel = $crudObject['eventsModel'];
+        $this->entryClass = $crudObject['entryClass'];
 
         $this->collection = $configuration['collection'] ?? 'default';
         $this->mediaName = $configuration['mediaName'] ?? $crudObject['name'];
@@ -33,7 +33,7 @@ abstract class MediaUploader extends Uploader
         $this->displayConversions = $configuration['displayConversions'] ?? [];
         $this->displayConversions = (array) $this->displayConversions;
 
-        $modelDefinition = (new $this->eventsModel)->getRegisteredMediaCollections()
+        $modelDefinition = (new $this->entryClass)->getRegisteredMediaCollections()
                             ->reject(function ($item) {
                                 $item->name !== $this->collection;
                             })
