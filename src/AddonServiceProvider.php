@@ -2,6 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads;
 
+use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
 use Backpack\CRUD\app\Library\CrudPanel\CrudField;
 use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaSingleBase64Image;
 use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaRepeatable;
@@ -34,7 +35,31 @@ class AddonServiceProvider extends ServiceProvider
                 'upload'          => MediaSingleFile::class,
                 'upload_multiple' => MediaMultipleFiles::class,
                 'repeatable'      => MediaRepeatable::class,
-                'relationship'    => RelationshipUploader::class
+                'relationship'    => RelationshipUploader::class,
+            ]);
+
+            return $this;
+        });
+
+        CrudColumn::macro('withMedia', function ($mediaDefinition = null) {
+            RegisterUploadEvents::handle($this, $mediaDefinition, [
+                'image'           => MediaSingleBase64Image::class,
+                'upload'          => MediaSingleFile::class,
+                'upload_multiple' => MediaMultipleFiles::class,
+                'repeatable'      => MediaRepeatable::class,
+                'relationship'    => RelationshipUploader::class,
+            ]);
+
+            return $this;
+        });
+
+        CrudColumn::macro('withUploads', function ($mediaDefinition = null) {
+            RegisterUploadEvents::handle($this, $mediaDefinition, [
+                'image'           => MediaSingleBase64Image::class,
+                'upload'          => MediaSingleFile::class,
+                'upload_multiple' => MediaMultipleFiles::class,
+                'repeatable'      => MediaRepeatable::class,
+                'relationship'    => RelationshipUploader::class,
             ]);
 
             return $this;

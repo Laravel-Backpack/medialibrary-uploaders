@@ -41,6 +41,7 @@ abstract class Uploader implements UploaderInterface
         $this->eventsModel = $field['eventsModel'];
         $this->path = $configuration['path'] ?? $field['prefix'] ?? '';
         $this->path = empty($this->path) ? $this->path : Str::of($this->path)->finish('/');
+        $this->crudObjectType = $crudObject['crudObjectType'];
     }
 
     abstract public function save(Model $entry, $values = null);
@@ -54,7 +55,7 @@ abstract class Uploader implements UploaderInterface
 
     public function retrieveUploadedFile(Model $entry)
     {
-        $this->setupUploadConfigsInField(CRUD::field($this->fieldName));
+        $this->setupUploadConfigsInCrudObject(CRUD::{$this->crudObjectType}($this->name));
 
         $value = $entry->{$this->fieldName};
 

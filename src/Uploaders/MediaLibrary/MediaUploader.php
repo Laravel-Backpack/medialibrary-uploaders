@@ -115,10 +115,10 @@ abstract class MediaUploader extends Uploader
 
     public function retrieveUploadedFile(Model $entry)
     {
-        $this->setupUploadConfigsInField(CRUD::field($this->fieldName));
-
+        $this->setupUploadConfigsInCrudObject(CRUD::{$this->crudObjectType}($this->name));
+        
         $media = $this->get($entry);
-       
+     
         if (! $media) {
             return null;
         }

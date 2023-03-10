@@ -16,8 +16,10 @@ class RepeatableUploader implements RepeatableUploaderInterface
     public $isRelationship;
 
     public function __construct(array $field)
+    public $crudObjectType;
     {
         $this->fieldName = $field['name'];
+        $this->crudObjectType = $crudObject['crudObjectType'];
     }
 
     public static function for(array $field)
