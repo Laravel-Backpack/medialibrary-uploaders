@@ -11,8 +11,7 @@ use Exception;
 
 class RegisterUploadEvents
 {
-    private static $defaultUploaders = [];
-
+    public function __construct(private readonly CrudField|CrudColumn $crudObject, private readonly array $uploadDefinition, private $defaultUploaders){}
     /**
      * From the given crud object and upload definition provide the event registry
      * service so that uploads are stored and retrieved automatically
@@ -24,7 +23,7 @@ class RegisterUploadEvents
      */
     public static function handle($crudObject, $uploadDefinition, $defaultUploaders = []): void
     {
-        self::$defaultUploaders = $defaultUploaders;
+        $instance = new self($crudObject, $uploadDefinition, $defaultUploaders);
 
         $attributes = $crudObject->getAttributes();
 
@@ -45,13 +44,13 @@ class RegisterUploadEvents
         }
 
         if (! isset($attributes['subfields'])) {
-            $uploaderType = self::getUploader($attributes, $uploadDefinition ?? []);
-            self::setupModelEvents($attributes['entryClass'], $uploaderType);
+            $uploaderType = $instance->getUploader($attributes, $uploadDefinition);
+            $instance->setupModelEvents($attributes['entryClass'], $uploaderType);
 
             return;
         }
 
-        self::handleRepeatableUploads($attributes, $uploadDefinition ?? []);
+        $instance->handleRepeatableUploads($attributes, $uploadDefinition);
     }
 
     /**
@@ -62,11 +61,11 @@ class RegisterUploadEvents
      * @param UploaderInterface|RepeatableUploaderInterface $uploader
      * @return void
      */
-    private static function setupModelEvents(string $model, UploaderInterface|RepeatableUploaderInterface $uploader): void
+    private function setupModelEvents(string $model, UploaderInterface|RepeatableUploaderInterface $uploader): void
     {
-        if ($uploader->crudObjectType === 'field') {
+        if ($uploader->getCrudObjectType() === 'field') {
             $model::saving(function ($entry) use ($uploader) {
-                $createdModelCount = 'model_count_'.$uploader->name;
+                $createdModelCount = 'model_count_'.$uploader->getName();
 
                 CRUD::set($createdModelCount, CRUD::get($createdModelCount) ?? 0);
 
@@ -89,7 +88,7 @@ class RegisterUploadEvents
      * @param array $uploadDefinition
      * @return void
      */
-    private static function handleRepeatableUploads(array $crudObject, array $uploadDefinition)
+    private function handleRepeatableUploads(array $crudObject, array $uploadDefinition)
     {
         $repeatableDefinitions = [];
 
@@ -104,15 +103,15 @@ class RegisterUploadEvents
                                                 array_merge($uploadDefinition, $subfielduploadDefinition) :
                                                 $uploadDefinition;
 
-                $uploaderType = static::getUploader($subfield, $subfielduploadDefinition);
+                $uploaderType = $this->getUploader($subfield, $subfielduploadDefinition);
 
                 $repeatableDefinitions[$subfield['entryClass']][] = $uploaderType;
             }
         }
 
         foreach ($repeatableDefinitions as $model => $uploaderTypes) {
-            $repeatableDefinition = self::$defaultUploaders['repeatable']::for($crudObject)->uploads(...$uploaderTypes);
-            static::setupModelEvents($model, $repeatableDefinition);
+            $repeatableDefinition = $this->defaultUploaders['repeatable']::for($crudObject)->uploads(...$uploaderTypes);
+            $this->setupModelEvents($model, $repeatableDefinition);
         }
     }
 
@@ -126,17 +125,17 @@ class RegisterUploadEvents
      *
      * @param array $crudObject
      * @param array $uploadDefinition
-     * @return UploaderInterface|ReatableUploaderInterface
+     * @return UploaderInterface|RepeatableUploaderInterface
      * @throws Exception
      */
-    private static function getUploader(array $crudObject, array $uploadDefinition)
+    private function getUploader(array $crudObject, array $uploadDefinition)
     {
         if (isset($uploadDefinition['uploaderType'])) {
             return $uploadDefinition['uploaderType']::for($crudObject, $uploadDefinition);
         }
 
-        if (isset(self::$defaultUploaders[$crudObject['type']])) {
-            return self::$defaultUploaders[$crudObject['type']]::for($crudObject, $uploadDefinition);
+        if (isset($this->defaultUploaders[$crudObject['type']])) {
+            return $this->defaultUploaders[$crudObject['type']]::for($crudObject, $uploadDefinition);
         }
 
         throw new Exception('Undefined upload type for '.$crudObject['crudObjectType'].' type: '.$crudObject['type']);

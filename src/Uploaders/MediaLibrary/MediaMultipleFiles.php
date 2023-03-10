@@ -7,26 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class MediaMultipleFiles extends MediaUploader
 {
-    public static function for(array $field, $configuration): self
+    public static function for(array $field, $configuration)
     {
-        return (new static($field, $configuration))->multiple();
+        return (new self($field, $configuration))->multiple();
     }
 
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable ? $this->saveRepeatableUploadMultiple($entry, $value) : $this->saveUploadMultiple($entry, $value);
+        $this->isRepeatable ? $this->saveRepeatableUploadMultiple($entry, $value) : $this->saveUploadMultiple($entry, $value);
     }
 
-    public function getForDisplay($entry)
-    {
-        $media = $this->get($entry);
-
-        return $media->map(function ($media) use ($entry) {
-            return $this->getMediaIdentifier($media, $entry);
-        })->toArray();
-    }
-
-    private function saveUploadMultiple($entry, $value = null): void
+    private function saveUploadMultiple($entry, $value): void
     {
         $filesToDelete = CRUD::getRequest()->get('clear_'.($this->repeatableContainerName ?? $this->name));
 
@@ -51,7 +42,7 @@ class MediaMultipleFiles extends MediaUploader
         }
     }
 
-    private function saveRepeatableUploadMultiple($entry): void
+    private function saveRepeatableUploadMultiple($entry, $value): void
     {
         $previousFiles = array_column($this->getPreviousRepeatableMedia($entry),$this->name);
 

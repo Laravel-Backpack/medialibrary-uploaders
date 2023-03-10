@@ -10,10 +10,10 @@ class MediaSingleFile extends MediaUploader
 {
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable ? $this->saveRepeatableUpload($entry, $value) : $this->saveUpload($entry, $value);
+        $this->isRepeatable ? $this->saveRepeatableSingleFile($entry, $value) : $this->saveSingleFile($entry, $value);
     }
 
-    private function saveRepeatableUpload($entry): void
+    private function saveRepeatableSingleFile($entry, $value): void
     {
         $values = CRUD::getRequest()->file($this->repeatableContainerName) ?? [];
         
@@ -55,7 +55,7 @@ class MediaSingleFile extends MediaUploader
         return $items;
     }
 
-    private function saveUpload($entry, $value = null): void
+    private function saveSingleFile($entry, $value): void
     {
         $value = $value ?? CRUD::getRequest()->file($this->name);
        

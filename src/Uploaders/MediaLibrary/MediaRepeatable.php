@@ -3,6 +3,8 @@
 namespace Backpack\MediaLibraryUploads\Uploaders\MediaLibrary;
 
 use Backpack\MediaLibraryUploads\Uploaders\RepeatableUploader;
+use Illuminate\Database\Eloquent\Model;
+use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 
 class MediaRepeatable extends RepeatableUploader
 {
@@ -14,11 +16,11 @@ class MediaRepeatable extends RepeatableUploader
         return new static($crudObject);
     }
 
-    protected function performSave($entry, $upload, $values, $row = null) {
-        $upload->save($entry, $values->pluck($upload->name)->toArray());
+    protected function performSave(Model $entry, UploaderInterface $upload, $values, $row = null) {
+        $upload->save($entry, $values->pluck($upload->getName())->toArray());
 
         $values->transform(function ($item) use ($upload) {
-            unset($item[$upload->name]);
+            unset($item[$upload->getName()]);
 
             return $item;
         });
@@ -33,13 +35,11 @@ class MediaRepeatable extends RepeatableUploader
             $values = json_decode($values, true);
         }
 
-        foreach ($this->repeatableUploads as $upload) {
-            $uploadValues = $upload->getPreviousRepeatableValues($entry);
-            $values = $this->mergeValuesRecursive($values, $uploadValues);
-        }
-
+        $uploadValues = $upload->getPreviousRepeatableValues($entry);
+        $values = $this->mergeValuesRecursive($values, $uploadValues);
+        
         $entry->{$this->name} = $values;
-
+        
         return $entry;
     }
 }

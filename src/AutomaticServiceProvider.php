@@ -13,6 +13,8 @@ use Backpack\CRUD\ViewNamespaces;
  */
 trait AutomaticServiceProvider
 {
+    public $path;
+    
     public function __construct($app)
     {
         $this->app = $app;

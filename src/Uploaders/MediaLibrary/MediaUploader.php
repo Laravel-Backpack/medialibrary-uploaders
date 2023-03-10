@@ -8,7 +8,9 @@ use Backpack\MediaLibraryUploads\Uploaders\Uploader;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 abstract class MediaUploader extends Uploader
 {
@@ -89,32 +91,34 @@ abstract class MediaUploader extends Uploader
                     ->toArray();
     }
 
-    public function get(Model $entry)
+    public function get(HasMedia|Model $entry)
     {
+        $media = $entry->getMedia($this->collection, function ($media) use ($entry) {
+            /** @var Media $media */
+            return $media->getCustomProperty('name') === $this->name && $media->getCustomProperty('repeatableContainerName') === $this->repeatableContainerName && $entry->{$entry->getKeyName()} === $media->getAttribute('model_id');
+        });
+
         if ($this->isMultiple || $this->isRepeatable) {
-            return $entry->getMedia($this->collection, function ($media) use ($entry) {
-                return $media->getCustomProperty('name') === $this->name && $media->getCustomProperty('repeatableContainerName') === $this->repeatableContainerName && $entry->id === $media->model_id;
-            });
+            return $media;
         }
 
-        return $entry->getFirstMedia($this->collection, function ($media) use ($entry) {
-            return $media->getCustomProperty('name') === $this->name && $media->getCustomProperty('repeatableContainerName') === $this->repeatableContainerName && $entry->id === $media->model_id;
-        });
+        return $media->first();
     }
 
     public function processFileUpload(Model $entry)
     {
-        if (is_a($this, \Backpack\MediaLibraryUploads\Uploaders\MediaRepeatable::class) && ! $this->isRelationship) {
-            $entry->{$this->name} = json_encode($this->save($entry));
-        } else {
-            $this->save($entry);
-            $entry->offsetUnset($this->name);
-        }
-
+        $this->save($entry);
+        $entry->offsetUnset($this->name);
         return $entry;
     }
 
-    public function retrieveUploadedFile(Model $entry)
+    /**
+     * Undocumented function
+     *
+     * @param HasMedia|Model $entry
+     * @return Model|null
+     */
+    public function retrieveUploadedFile(HasMedia|Model $entry)
     {
         $this->setupUploadConfigsInCrudObject(CRUD::{$this->crudObjectType}($this->name));
         

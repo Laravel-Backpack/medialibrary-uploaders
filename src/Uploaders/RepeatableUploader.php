@@ -5,17 +5,17 @@ namespace Backpack\MediaLibraryUploads\Uploaders;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
 use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
+use Backpack\MediaLibraryUploads\Traits\HasCrudObjectType;
+use Backpack\MediaLibraryUploads\Traits\HasName;
 use Illuminate\Database\Eloquent\Model;
 
 class RepeatableUploader implements RepeatableUploaderInterface
 {
-    public $name;
+    use HasCrudObjectType, HasName;
 
     public $repeatableUploads;
 
     public $isRelationship;
-
-    public $crudObjectType;
 
     public function __construct(array $crudObject)
     {
@@ -60,12 +60,12 @@ class RepeatableUploader implements RepeatableUploaderInterface
         return $value;
     }
 
-    protected function performSave($entry, $upload, $value, $row = null)
+    protected function performSave(Model $entry, UploaderInterface $upload, $value, $row = null)
     {
-        $uploadedValues = $upload->save($entry, $value->pluck($upload->name)->toArray());
+        $uploadedValues = $upload->save($entry, $value->pluck($upload->getName())->toArray());
 
         $value = $value->map(function ($item, $key) use ($upload, $uploadedValues) {
-            $item[$upload->name] = $uploadedValues[$key] ?? null;
+            $item[$upload->getName()] = $uploadedValues[$key] ?? null;
 
             return $item;
         });
@@ -80,15 +80,16 @@ class RepeatableUploader implements RepeatableUploaderInterface
         $subfields = collect($crudField->getAttributes()['subfields']);
         $subfields = $subfields->map(function ($item) {
             if (isset($item['withMedia']) || isset($item['withUploads'])) {
+                /** @var UploaderInterface $uploader */
                 $uploader = array_filter($this->repeatableUploads, function ($item) {
                     return $item->name !== $this->name;
                 })[0];
                 $item['upload'] = true;
-                $item['disk'] = $uploader->disk;
-                $item['prefix'] = $uploader->path;
-                if ($uploader->temporary) {
-                    $item['temporary'] = $uploader->temporary;
-                    $item['expiration'] = $uploader->expiration;
+                $item['disk'] = $uploader->getDisk();
+                $item['prefix'] = $uploader->getPath();
+                if ($uploader->getTemporary()) {
+                    $item['temporary'] = $uploader->getTemporary();
+                    $item['expiration'] = $uploader->getExpiration();
                 }
             }
 

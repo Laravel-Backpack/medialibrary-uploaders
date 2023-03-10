@@ -11,14 +11,13 @@ class MediaSingleBase64Image extends MediaUploader
 {
     public function save(Model $entry, $value = null)
     {
-        return $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableSingleBase64Image($entry, $value) : $this->saveSingleBase64Image($entry, $value);
+        $this->isRepeatable && ! $this->isRelationship ? $this->saveRepeatableSingleBase64Image($entry, $value) : $this->saveSingleBase64Image($entry, $value);
     }
 
-    private function saveSingleBase64Image($entry, $value = null): void
+    private function saveSingleBase64Image($entry, $value): void
     {
-        dump($value);
         $value = $value ?? CrudPanelFacade::getRequest()->get($this->name);
-        dump($value);
+
         $previousImage = $this->get($entry);
         
         if (! $value && $previousImage) {

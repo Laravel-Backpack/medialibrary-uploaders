@@ -8,9 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Closure;
+use Backpack\CRUD\app\Library\CrudPanel\CrudField;
+use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
+use Backpack\MediaLibraryUploads\Traits\HasCrudObjectType;
 
 abstract class Uploader implements UploaderInterface
 {
+    use HasCrudObjectType;
+    
     /**
      * Indicates if this uploader instance is inside a repeatable container
      *
@@ -91,13 +96,6 @@ abstract class Uploader implements UploaderInterface
      */
     public $isRelationship = false;
 
-    /**
-     * The type of the object upload is handling: field or column.
-     *
-     * @var string
-     */
-    public $crudObjectType;
-
     public function __construct(array $crudObject, array $configuration)
     {
         $this->name = $crudObject['name'];
@@ -131,6 +129,56 @@ abstract class Uploader implements UploaderInterface
         $entry->{$this->name} = $this->save($entry);
 
         return $entry;
+    }
+
+    /**
+     * Return the uploader name
+     *
+     * @return string
+     */
+    public function getName() 
+    {
+        return $this->name;
+    }
+
+    /**
+     * Return the uploader disk
+     *
+     * @return string
+     */
+    public function getDisk()
+    {
+        return $this->disk;
+    }
+
+    /**
+     * Return the uploader path
+     *
+     * @return string
+     */
+    public function getPath()
+    {
+        return $this->path;
+    }
+
+    /**
+     * Return the uploader temporary option
+     *
+     * @return boolean
+     */
+    public function getTemporary()
+    {
+        return $this->temporary;
+    }
+
+    /**
+     * Return the uploader expiration time in minutes
+     *
+     * @return int
+     */
+    public function getExpiration()
+    {
+        return $this->expiration;
     }
 
 
@@ -190,7 +238,7 @@ abstract class Uploader implements UploaderInterface
      * @param boolean $isRelationship
      * @return self
      */
-    public function relationship(bool $isRelationship)
+    public function relationship(bool $isRelationship): self
     {
         if ($isRelationship) {
             $this->isRepeatable = false;
@@ -205,9 +253,9 @@ abstract class Uploader implements UploaderInterface
      * corresponding container name.
      *
      * @param string $repeatableContainerName
-     * @return void
+     * @return self
      */
-    public function repeats(string $repeatableContainerName)
+    public function repeats(string $repeatableContainerName): self
     {
         $this->isRepeatable = true;
 
@@ -237,7 +285,7 @@ abstract class Uploader implements UploaderInterface
     /**
      * Return a new instance of the entry class for the uploader
      *
-     * @return void
+     * @return Model
      */
     protected function modelInstance()
     {
@@ -322,7 +370,7 @@ abstract class Uploader implements UploaderInterface
      * @param CrudField|CrudColumn $crudObject
      * @return void
      */
-    protected function setupUploadConfigsInCrudObject($crudObject)
+    protected function setupUploadConfigsInCrudObject(CrudField|CrudColumn $crudObject)
     {
         $attributes = $crudObject->getAttributes();
         $crudObject->upload(true)

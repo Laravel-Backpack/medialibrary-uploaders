@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\Storage;
 
 class MultipleFiles extends Uploader
 {
-    public static function for(array $field, $configuration): static
+    public static function for(array $field, $configuration)
     {
-        return (new static($field, $configuration))->multiple();
+        return (new self($field, $configuration))->multiple();
     }
 
     public function save(Model $entry, $value = null)

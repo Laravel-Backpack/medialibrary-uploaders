@@ -29,50 +29,50 @@ class AddonServiceProvider extends ServiceProvider
     {
         $this->autoboot();
 
-        CrudField::macro('withMedia', function ($mediaDefinition = null) {
-            RegisterUploadEvents::handle($this, $mediaDefinition, [
+        CrudField::macro('withMedia', function ($uploadDefinition = []) {
+            /** @var CrudField|CrudColumn $this */
+            RegisterUploadEvents::handle($this, $uploadDefinition, [
                 'image'           => MediaSingleBase64Image::class,
                 'upload'          => MediaSingleFile::class,
                 'upload_multiple' => MediaMultipleFiles::class,
                 'repeatable'      => MediaRepeatable::class,
-                'relationship'    => RelationshipUploader::class,
             ]);
 
             return $this;
         });
 
-        CrudColumn::macro('withMedia', function ($mediaDefinition = null) {
-            RegisterUploadEvents::handle($this, $mediaDefinition, [
+        CrudColumn::macro('withMedia', function ($uploadDefinition = []) {
+             /** @var CrudField|CrudColumn $this */
+            RegisterUploadEvents::handle($this, $uploadDefinition, [
                 'image'           => MediaSingleBase64Image::class,
                 'upload'          => MediaSingleFile::class,
                 'upload_multiple' => MediaMultipleFiles::class,
                 'repeatable'      => MediaRepeatable::class,
-                'relationship'    => RelationshipUploader::class,
             ]);
 
             return $this;
         });
 
-        CrudColumn::macro('withUploads', function ($mediaDefinition = null) {
-            RegisterUploadEvents::handle($this, $mediaDefinition, [
+        CrudColumn::macro('withUploads', function ($uploadDefinition = []) {
+             /** @var CrudField|CrudColumn $this */
+            RegisterUploadEvents::handle($this, $uploadDefinition, [
                 'image'           => MediaSingleBase64Image::class,
                 'upload'          => MediaSingleFile::class,
                 'upload_multiple' => MediaMultipleFiles::class,
                 'repeatable'      => MediaRepeatable::class,
-                'relationship'    => RelationshipUploader::class,
             ]);
 
             return $this;
         });
 
         // TODO: move to core
-        CrudField::macro('withUploads', function ($uploadDefinition = null) {
+        CrudField::macro('withUploads', function ($uploadDefinition = []) {
+             /** @var CrudField|CrudColumn $this */
             RegisterUploadEvents::handle($this, $uploadDefinition, [
                 'image'           => SingleBase64Image::class,
                 'upload'          => SingleFile::class,
                 'upload_multiple' => MultipleFiles::class,
                 'repeatable'      => RepeatableUploader::class,
-                'relationship'    => RelationshipUploader::class,
             ]);
 
             return $this;

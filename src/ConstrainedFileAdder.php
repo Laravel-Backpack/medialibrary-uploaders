@@ -37,7 +37,7 @@ class ConstrainedFileAdder
 
     public function toMediaCollectionOnCloudDisk(string $collectionName = 'default')
     {
-        abort(500, 'toMediaCollection() is automatically called by Backpack. You should configure it with: ->withMedia([\'collection\' => \''.$collectionName.'\', \'disk\' => \''.$diskName.'\'])'); 
+        abort(500, 'toMediaCollection() is automatically called by Backpack. You should configure it with: ->withMedia([\'collection\' => \''.$collectionName.'\'])'); 
     }
 
     public function getFileAdder()

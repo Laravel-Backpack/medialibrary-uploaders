@@ -13,4 +13,6 @@ interface RepeatableUploaderInterface
     public function processFileUpload(Model $entry);
 
     public function retrieveUploadedFile(Model $entry);
+
+    public function __construct(array $crudObject);
 }
