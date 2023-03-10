@@ -11,7 +11,16 @@ class RegisterUploadEvents
 {
     private static $defaultUploaders = [];
 
-    public static function handle($crudObject, $mediaDefinition, $defaultUploaders = []): void
+    /**
+     * From the given crud object and upload definition provide the event registry
+     * service so that uploads are stored and retrieved automatically
+     *
+     * @param CrudField|CrudColumn $crudObject
+     * @param array $uploadDefinition
+     * @param array $defaultUploaders
+     * @return void
+     */
+    public static function handle($crudObject, $uploadDefinition, $defaultUploaders = []): void
     {
         self::$defaultUploaders = $defaultUploaders;
 
@@ -34,13 +43,13 @@ class RegisterUploadEvents
         }
 
         if (! isset($attributes['subfields'])) {
-            $mediaType = self::getUploaderFromField($attributes, $mediaDefinition ?? []);
+            $mediaType = self::getUploaderFromField($attributes, $uploadDefinition ?? []);
             self::setupModelEvents($attributes['eventsModel'], $mediaType);
 
             return;
         }
 
-        self::handleRepeatableUploads($attributes, $mediaDefinition ?? []);
+        self::handleRepeatableUploads($attributes, $uploadDefinition ?? []);
     }
 
     private static function setupModelEvents($model, $uploader): void
@@ -62,7 +71,7 @@ class RegisterUploadEvents
         });
     }
 
-    private static function handleRepeatableUploads($field, $mediaDefinition)
+    private static function handleRepeatableUploads($field, $uploadDefinition)
     {
         $repeatableDefinitions = [];
 
@@ -71,13 +80,13 @@ class RegisterUploadEvents
                 $subfield['eventsModel'] = $subfield['baseModel'] ?? $field['eventsModel'];
                 $subfield['crudObjectType'] = $field['crudObjectType'];
 
-                $subfieldMediaDefinition = $subfield['withUploads'] ?? $subfield['withMedia'];
+                $subfielduploadDefinition = $subfield['withUploads'] ?? $subfield['withMedia'];
 
-                $subfieldMediaDefinition = is_array($subfieldMediaDefinition) ?
-                                                array_merge($mediaDefinition, $subfieldMediaDefinition) :
-                                                $mediaDefinition;
+                $subfielduploadDefinition = is_array($subfielduploadDefinition) ?
+                                                array_merge($uploadDefinition, $subfielduploadDefinition) :
+                                                $uploadDefinition;
 
-                $mediaType = static::getUploaderFromField($subfield, $subfieldMediaDefinition);
+                $mediaType = static::getUploaderFromField($subfield, $subfielduploadDefinition);
 
                 $repeatableDefinitions[$subfield['eventsModel']][] = $mediaType;
             }
@@ -89,14 +98,14 @@ class RegisterUploadEvents
         }
     }
 
-    private static function getUploaderFromField($field, $mediaDefinition)
+    private static function getUploaderFromField($field, $uploadDefinition)
     {
-        if (isset($mediaDefinition['uploaderType'])) {
-            return $mediaDefinition['uploaderType']::for($field, $mediaDefinition);
+        if (isset($uploadDefinition['uploaderType'])) {
+            return $uploadDefinition['uploaderType']::for($field, $uploadDefinition);
         }
 
         if (isset(self::$defaultUploaders[$field['type']])) {
-            return self::$defaultUploaders[$field['type']]::for($field, $mediaDefinition);
+            return self::$defaultUploaders[$field['type']]::for($field, $uploadDefinition);
         }
 
         throw new Exception('Undefined upload type for field type: '.$field['type']);
