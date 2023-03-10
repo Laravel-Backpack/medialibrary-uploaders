@@ -42,9 +42,9 @@ class SingleFile extends Uploader
 
     private function saveFile($entry, $value)
     {
-        $value = $value ?? CrudPanelFacade::getRequest()->file($this->fieldName);
+        $value = $value ?? CrudPanelFacade::getRequest()->file($this->name);
 
-        $previousFile = $entry->getOriginal($this->fieldName);
+        $previousFile = $entry->getOriginal($this->name);
 
         if ($value && is_file($value) && $value->isValid()) {
             if ($previousFile) {
@@ -57,7 +57,7 @@ class SingleFile extends Uploader
             return $this->path.$fileName;
         }
 
-        if (! $value && CrudPanelFacade::getRequest()->has($this->fieldName) && $previousFile) {
+        if (! $value && CrudPanelFacade::getRequest()->has($this->name) && $previousFile) {
             Storage::disk($this->disk)->delete($previousFile);
 
             return null;

@@ -20,11 +20,11 @@ class MultipleFiles extends Uploader
 
     private function saveMultipleFiles($entry, $value = null)
     {
-        $filesToDelete = request()->get('clear_'.$this->fieldName);
+        $filesToDelete = request()->get('clear_'.$this->name);
 
-        $value = $value ?? request()->file($this->fieldName);
+        $value = $value ?? request()->file($this->name);
 
-        $previousFiles = $entry->getOriginal($this->fieldName) ?? [];
+        $previousFiles = $entry->getOriginal($this->name) ?? [];
 
         if (! is_array($previousFiles) && is_string($previousFiles)) {
             $previousFiles = json_decode($previousFiles, true);
@@ -52,7 +52,7 @@ class MultipleFiles extends Uploader
             }
         }
 
-        return isset($entry->getCasts()[$this->fieldName]) ? $previousFiles : json_encode($previousFiles);
+        return isset($entry->getCasts()[$this->name]) ? $previousFiles : json_encode($previousFiles);
     }
 
     private function saveRepeatableMutipleFiles($entry, $files)

@@ -9,25 +9,27 @@ use Illuminate\Database\Eloquent\Model;
 
 class RepeatableUploader implements RepeatableUploaderInterface
 {
-    public $fieldName;
+    public $name;
 
     public $repeatableUploads;
 
     public $isRelationship;
 
-    public function __construct(array $field)
     public $crudObjectType;
+
+    public function __construct(array $crudObject)
     {
-        $this->fieldName = $field['name'];
+        $this->name = $crudObject['name'];
         $this->crudObjectType = $crudObject['crudObjectType'];
     }
 
-    public static function for(array $field)
+    public static function for(array $crudObject)
     {
-        if(isset($field['relation_type']) && $field['entity'] !== false) {
-            return new RepeatableRelationship($field);
+        if (isset($crudObject['relation_type']) && $crudObject['entity'] !== false) {
+            return new RepeatableRelationship($crudObject);
         }
-        return new static($field);
+
+        return new static($crudObject);
     }
 
     public function uploads(...$uploads): self
@@ -36,7 +38,7 @@ class RepeatableUploader implements RepeatableUploaderInterface
             if (! is_a($upload, UploaderInterface::class)) {
                 throw new \Exception('Uploads must be an instance of UploaderInterface.');
             }
-            $this->repeatableUploads[] = $upload->repeats($this->fieldName)->relationship($this->isRelationship ?? false);
+            $this->repeatableUploads[] = $upload->repeats($this->name)->relationship($this->isRelationship ?? false);
         }
 
         $this->setupSubfieldsUploadSettings();
@@ -46,8 +48,8 @@ class RepeatableUploader implements RepeatableUploaderInterface
 
     public function save(Model $entry, $value = null)
     {
-        $values = collect(request()->get($this->fieldName));
-        $files = collect(request()->file($this->fieldName));
+        $values = collect(request()->get($this->name));
+        $files = collect(request()->file($this->name));
 
         $value = $this->mergeValuesRecursive($values, $files);
 
@@ -60,10 +62,10 @@ class RepeatableUploader implements RepeatableUploaderInterface
 
     protected function performSave($entry, $upload, $value, $row = null)
     {
-        $uploadedValues = $upload->save($entry, $value->pluck($upload->fieldName)->toArray());
+        $uploadedValues = $upload->save($entry, $value->pluck($upload->name)->toArray());
 
         $value = $value->map(function ($item, $key) use ($upload, $uploadedValues) {
-            $item[$upload->fieldName] = $uploadedValues[$key] ?? null;
+            $item[$upload->name] = $uploadedValues[$key] ?? null;
 
             return $item;
         });
@@ -73,13 +75,13 @@ class RepeatableUploader implements RepeatableUploaderInterface
 
     private function setupSubfieldsUploadSettings()
     {
-        $crudField = CRUD::field($this->fieldName);
+        $crudField = CRUD::field($this->name);
 
         $subfields = collect($crudField->getAttributes()['subfields']);
         $subfields = $subfields->map(function ($item) {
             if (isset($item['withMedia']) || isset($item['withUploads'])) {
                 $uploader = array_filter($this->repeatableUploads, function ($item) {
-                    return $item->fieldName !== $this->fieldName;
+                    return $item->name !== $this->name;
                 })[0];
                 $item['upload'] = true;
                 $item['disk'] = $uploader->disk;
@@ -99,7 +101,7 @@ class RepeatableUploader implements RepeatableUploaderInterface
     public function processFileUpload(Model $entry)
     {
         if (! $this->isRelationship) {
-            $entry->{$this->fieldName} = json_encode($this->save($entry));
+            $entry->{$this->name} = json_encode($this->save($entry));
         } else {
             $entry = $this->save($entry);
         }
@@ -109,9 +111,10 @@ class RepeatableUploader implements RepeatableUploaderInterface
 
     public function retrieveUploadedFile(Model $entry)
     {
-        foreach($this->repeatableUploads as $upload) {
+        foreach ($this->repeatableUploads as $upload) {
             $entry = $this->retrieveFiles($entry, $upload);
         }
+
         return $entry;
     }
 

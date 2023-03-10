@@ -4,10 +4,10 @@ namespace Backpack\MediaLibraryUploads;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
 use Backpack\CRUD\app\Library\CrudPanel\CrudField;
-use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaSingleBase64Image;
-use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaRepeatable;
-use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaSingleFile;
 use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaMultipleFiles;
+use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaRepeatable;
+use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaSingleBase64Image;
+use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaSingleFile;
 use Backpack\MediaLibraryUploads\Uploaders\MultipleFiles;
 use Backpack\MediaLibraryUploads\Uploaders\RelationshipUploader;
 use Backpack\MediaLibraryUploads\Uploaders\RepeatableUploader;
@@ -72,7 +72,7 @@ class AddonServiceProvider extends ServiceProvider
                 'upload'          => SingleFile::class,
                 'upload_multiple' => MultipleFiles::class,
                 'repeatable'      => RepeatableUploader::class,
-                'relationship'    => RelationshipUploader::class
+                'relationship'    => RelationshipUploader::class,
             ]);
 
             return $this;

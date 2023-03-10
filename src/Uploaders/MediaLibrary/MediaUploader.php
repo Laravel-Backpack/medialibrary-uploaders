@@ -4,12 +4,11 @@ namespace Backpack\MediaLibraryUploads\Uploaders\MediaLibrary;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
+use Backpack\MediaLibraryUploads\Uploaders\Uploader;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
-use Backpack\MediaLibraryUploads\Uploaders\Uploader;
 
 abstract class MediaUploader extends Uploader
 {
@@ -23,12 +22,12 @@ abstract class MediaUploader extends Uploader
 
     public $savingEventCallback = null;
 
-    public function __construct(array $field, array $configuration)
+    public function __construct(array $crudObject, array $configuration)
     {
-        $this->eventsModel = $field['eventsModel'];
+        $this->eventsModel = $crudObject['eventsModel'];
 
         $this->collection = $configuration['collection'] ?? 'default';
-        $this->mediaName = $configuration['mediaName'] ?? $field['name'];
+        $this->mediaName = $configuration['mediaName'] ?? $crudObject['name'];
         $this->savingEventCallback = $configuration['whenSaving'] ?? null;
 
         $this->displayConversions = $configuration['displayConversions'] ?? [];
@@ -41,12 +40,14 @@ abstract class MediaUploader extends Uploader
                             ->first();
 
         $configuration['disk'] = $modelDefinition?->diskName ?? null;
-        
-        $configuration['disk'] = empty($configuration['disk']) ? $field['disk'] ?? config('media-library.disk_name') : null;
-        // read https://spatie.be/docs/laravel-medialibrary/v10/advanced-usage/using-a-custom-directory-structure#main 
+
+        $configuration['disk'] = empty($configuration['disk']) ? $crudObject['disk'] ?? config('media-library.disk_name') : null;
+
+        // read https://spatie.be/docs/laravel-medialibrary/v10/advanced-usage/using-a-custom-directory-structure#main
         // on how to customize file directory
-        $field['prefix'] = $configuration['path'] =  '';
-        parent::__construct($field, $configuration);        
+        $crudObject['prefix'] = $configuration['path'] = '';
+
+        parent::__construct($crudObject, $configuration);
     }
 
     abstract public function save(Model $entry, $value = null);
@@ -54,7 +55,7 @@ abstract class MediaUploader extends Uploader
     protected function getPreviousRepeatableMedia(Model $entry)
     {
         return $this->get($entry)->transform(function ($item) {
-            return [$this->fieldName => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
+            return [$this->name => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
         })->sortBy('order_column')->keyBy('order_column')->toArray();
     }
 
@@ -62,16 +63,16 @@ abstract class MediaUploader extends Uploader
     {
         if ($this->isMultiple) {
             return $this->get($entry)
-                        ->groupBy(function($item) {
+                        ->groupBy(function ($item) {
                             return $item->getCustomProperty('repeatableRow');
                         })
                         ->transform(function ($media) use ($entry) {
-                            $mediaItems = $media->map(function($item) use ($entry) {
+                            $mediaItems = $media->map(function ($item) use ($entry) {
                                 return $this->getMediaIdentifier($item, $entry);
                             })
                             ->toArray();
 
-                            return [$this->fieldName => $mediaItems];
+                            return [$this->name => $mediaItems];
                         })
                         ->toArray();
         }
@@ -79,8 +80,8 @@ abstract class MediaUploader extends Uploader
         return $this->get($entry)
                     ->transform(function ($item) use ($entry) {
                         return [
-                            $this->fieldName => $this->getMediaIdentifier($item, $entry), 
-                            'order_column' => $item->getCustomProperty('repeatableRow')
+                            $this->name => $this->getMediaIdentifier($item, $entry),
+                            'order_column'   => $item->getCustomProperty('repeatableRow'),
                         ];
                     })
                     ->sortBy('order_column')
@@ -92,22 +93,22 @@ abstract class MediaUploader extends Uploader
     {
         if ($this->isMultiple || $this->isRepeatable) {
             return $entry->getMedia($this->collection, function ($media) use ($entry) {
-                return $media->getCustomProperty('fieldName') === $this->fieldName && $media->getCustomProperty('parentField') === $this->parentField && $entry->id === $media->model_id;
+                return $media->getCustomProperty('name') === $this->name && $media->getCustomProperty('parentField') === $this->parentField && $entry->id === $media->model_id;
             });
         }
 
         return $entry->getFirstMedia($this->collection, function ($media) use ($entry) {
-            return $media->getCustomProperty('fieldName') === $this->fieldName && $media->getCustomProperty('parentField') === $this->parentField && $entry->id === $media->model_id;
+            return $media->getCustomProperty('name') === $this->name && $media->getCustomProperty('parentField') === $this->parentField && $entry->id === $media->model_id;
         });
     }
 
     public function processFileUpload(Model $entry)
     {
         if (is_a($this, \Backpack\MediaLibraryUploads\Uploaders\MediaRepeatable::class) && ! $this->isRelationship) {
-            $entry->{$this->fieldName} = json_encode($this->save($entry));
+            $entry->{$this->name} = json_encode($this->save($entry));
         } else {
             $this->save($entry);
-            $entry->offsetUnset($this->fieldName);
+            $entry->offsetUnset($this->name);
         }
 
         return $entry;
@@ -122,19 +123,19 @@ abstract class MediaUploader extends Uploader
         if (! $media) {
             return null;
         }
-        
+
         if (empty($entry->mediaConversions)) {
             $entry->registerAllMediaConversions();
         }
 
         if (is_a($media, 'Spatie\MediaLibrary\MediaCollections\Models\Media')) {
-            $entry->{$this->fieldName} = $this->getMediaIdentifier($media, $entry);
+            $entry->{$this->name} = $this->getMediaIdentifier($media, $entry);
         } else {
-            $entry->{$this->fieldName} = $media->map(function ($item) use ($entry) {
+            $entry->{$this->name} = $media->map(function ($item) use ($entry) {
                 return $this->getMediaIdentifier($item, $entry);
             })->toArray();
         }
-
+        
         return $entry;
     }
 
@@ -156,8 +157,8 @@ abstract class MediaUploader extends Uploader
             $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
         }
 
-        if(!$constrainedMedia) {
-            throw new Exception('Please return a valid class from `whenSaving` closure on field: ' . $this->fieldName);
+        if (! $constrainedMedia) {
+            throw new Exception('Please return a valid class from `whenSaving` closure on field: '.$this->name);
         }
 
         $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->disk);
@@ -165,7 +166,7 @@ abstract class MediaUploader extends Uploader
 
     public function getCustomProperties()
     {
-        return ['fieldName' => $this->fieldName, 'parentField' => $this->parentField, 'repeatableRow' => $this->order];
+        return ['name' => $this->name, 'parentField' => $this->parentField, 'repeatableRow' => $this->order];
     }
 
     public function getMediaIdentifier($media, $entry = null)

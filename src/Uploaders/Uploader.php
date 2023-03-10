@@ -12,7 +12,7 @@ abstract class Uploader implements UploaderInterface
 {
     public $isRepeatable = false;
 
-    public $fieldName;
+    public $name;
 
     public $parentField;
 
@@ -32,14 +32,16 @@ abstract class Uploader implements UploaderInterface
 
     public $isRelationship;
 
-    public function __construct(array $field, $configuration)
+    public $crudObjectType;
+
+    public function __construct(array $crudObject, $configuration)
     {
-        $this->fieldName = $field['name'];
-        $this->disk = $configuration['disk'] ?? $field['disk'] ?? 'public';
+        $this->name = $crudObject['name'];
+        $this->disk = $configuration['disk'] ?? $crudObject['disk'] ?? 'public';
         $this->temporary = $configuration['temporary'] ?? false;
         $this->expiration = $configuration['expiration'] ?? 1;
-        $this->eventsModel = $field['eventsModel'];
-        $this->path = $configuration['path'] ?? $field['prefix'] ?? '';
+        $this->eventsModel = $crudObject['eventsModel'];
+        $this->path = $configuration['path'] ?? $crudObject['prefix'] ?? '';
         $this->path = empty($this->path) ? $this->path : Str::of($this->path)->finish('/');
         $this->crudObjectType = $crudObject['crudObjectType'];
     }
@@ -48,7 +50,7 @@ abstract class Uploader implements UploaderInterface
 
     public function processFileUpload(Model $entry)
     {
-        $entry->{$this->fieldName} = $this->save($entry);
+        $entry->{$this->name} = $this->save($entry);
 
         return $entry;
     }
@@ -57,20 +59,20 @@ abstract class Uploader implements UploaderInterface
     {
         $this->setupUploadConfigsInCrudObject(CRUD::{$this->crudObjectType}($this->name));
 
-        $value = $entry->{$this->fieldName};
+        $value = $entry->{$this->name};
 
-        if ($this->isMultiple && ! isset($entry->getCasts()[$this->fieldName]) && is_string($value)) {
-            $entry->{$this->fieldName} = json_decode($value, true);
+        if ($this->isMultiple && ! isset($entry->getCasts()[$this->name]) && is_string($value)) {
+            $entry->{$this->name} = json_decode($value, true);
         } else {
-            $entry->{$this->fieldName} = Str::after($value, $this->path);
+            $entry->{$this->name} = Str::after($value, $this->path);
         }
 
         return $entry;
     }
 
-    public static function for(array $field, $definition)
+    public static function for(array $crudObject, $definition)
     {
-        return new static($field, $definition);
+        return new static($crudObject, $definition);
     }
 
     protected function multiple()
@@ -104,7 +106,7 @@ abstract class Uploader implements UploaderInterface
         $items = CRUD::getRequest()->input('_order_'.$this->parentField) ?? [];
 
         array_walk($items, function (&$key, $value) {
-            $requestValue = $key[$this->fieldName] ?? null;
+            $requestValue = $key[$this->name] ?? null;
             $key = $this->isMultiple ? (is_string($requestValue) ? explode(',', $requestValue) : $requestValue) : $requestValue;
         });
 
@@ -120,7 +122,7 @@ abstract class Uploader implements UploaderInterface
     {
         $previousValues = json_decode($entry->getOriginal($this->parentField), true);
         if (! empty($previousValues)) {
-            $previousValues = array_column($previousValues, $this->fieldName);
+            $previousValues = array_column($previousValues, $this->name);
         }
 
         return $previousValues ?? [];
@@ -149,10 +151,10 @@ abstract class Uploader implements UploaderInterface
         return Str::of($this->fileName ?? Str::random(40)).'.'.$this->getExtensionFromFile($file);
     }
 
-    protected function setupUploadConfigsInField($field)
+    protected function setupUploadConfigsInCrudObject($crudObject)
     {
-        $attributes = $field->getAttributes();
-        $field->upload(true)
+        $attributes = $crudObject->getAttributes();
+        $crudObject->upload(true)
             ->disk($attributes['disk'] ?? $this->disk)
             ->prefix($attributes['prefix'] ?? $this->path);
     }

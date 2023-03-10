@@ -16,8 +16,8 @@ class SingleBase64Image extends Uploader
 
     private function saveSingleBase64($entry, $value)
     {
-        $value = $value ?? CRUD::getRequest()->get($this->fieldName);
-        $previousImage = $entry->getOriginal($this->fieldName);
+        $value = $value ?? CRUD::getRequest()->get($this->name);
+        $previousImage = $entry->getOriginal($this->name);
 
         if (! $value && $previousImage) {
             Storage::disk($this->disk)->delete($previousImage);

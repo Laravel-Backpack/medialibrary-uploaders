@@ -17,7 +17,7 @@ class MediaSingleBase64Image extends MediaUploader
     private function saveSingleBase64Image($entry, $value = null): void
     {
         dump($value);
-        $value = $value ?? CrudPanelFacade::getRequest()->get($this->fieldName);
+        $value = $value ?? CrudPanelFacade::getRequest()->get($this->name);
         dump($value);
         $previousImage = $this->get($entry);
         
@@ -38,7 +38,7 @@ class MediaSingleBase64Image extends MediaUploader
 
     private function saveRepeatableSingleBase64Image($entry, $value): void
     {
-        $previousImages = array_column($this->getPreviousRepeatableMedia($entry),$this->fieldName);
+        $previousImages = array_column($this->getPreviousRepeatableMedia($entry),$this->name);
     
         foreach ($value as $row => $rowValue) {
             if ($rowValue) {

@@ -6,19 +6,19 @@ use Backpack\MediaLibraryUploads\Uploaders\RepeatableUploader;
 
 class MediaRepeatable extends RepeatableUploader
 {
-    public static function for(array $field)
+    public static function for(array $crudObject)
     {
-        if(isset($field['relation_type']) && $field['entity'] !== false) {
-            return new MediaRepeatableRelationship($field);
+        if(isset($crudObject['relation_type']) && $crudObject['entity'] !== false) {
+            return new MediaRepeatableRelationship($crudObject);
         }
-        return new static($field);
+        return new static($crudObject);
     }
 
     protected function performSave($entry, $upload, $values, $row = null) {
-        $upload->save($entry, $values->pluck($upload->fieldName)->toArray());
+        $upload->save($entry, $values->pluck($upload->name)->toArray());
 
         $values->transform(function ($item) use ($upload) {
-            unset($item[$upload->fieldName]);
+            unset($item[$upload->name]);
 
             return $item;
         });
@@ -27,7 +27,7 @@ class MediaRepeatable extends RepeatableUploader
     }    
 
     protected function retrieveFiles($entry, $upload) {
-        $values = $entry->{$this->fieldName} ?? [];
+        $values = $entry->{$this->name} ?? [];
 
         if (! is_array($values)) {
             $values = json_decode($values, true);
@@ -38,7 +38,7 @@ class MediaRepeatable extends RepeatableUploader
             $values = $this->mergeValuesRecursive($values, $uploadValues);
         }
 
-        $entry->{$this->fieldName} = $values;
+        $entry->{$this->name} = $values;
 
         return $entry;
     }

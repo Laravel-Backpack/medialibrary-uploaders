@@ -28,11 +28,11 @@ class MediaMultipleFiles extends MediaUploader
 
     private function saveUploadMultiple($entry, $value = null): void
     {
-        $filesToDelete = CRUD::getRequest()->get('clear_'.($this->parentField ?? $this->fieldName));
+        $filesToDelete = CRUD::getRequest()->get('clear_'.($this->parentField ?? $this->name));
 
         $filesToDelete = collect($filesToDelete)->flatten()->toArray();
 
-        $value = $value ?? CRUD::getRequest()->file($this->fieldName);
+        $value = $value ?? CRUD::getRequest()->file($this->name);
 
         $previousFiles = $this->get($entry);
       
@@ -53,7 +53,7 @@ class MediaMultipleFiles extends MediaUploader
 
     private function saveRepeatableUploadMultiple($entry): void
     {
-        $previousFiles = array_column($this->getPreviousRepeatableMedia($entry),$this->fieldName);
+        $previousFiles = array_column($this->getPreviousRepeatableMedia($entry),$this->name);
 
         $filesToDelete = collect($this->getFromRequestAsArray('clear_'))->flatten()->toArray();
         $fileOrder = $this->getFromRequestAsArray('_order_', ',');
@@ -61,7 +61,7 @@ class MediaMultipleFiles extends MediaUploader
         $value = CRUD::getRequest()->file($this->parentField) ?? [];
 
         foreach ($value as $row => $rowValue) {
-            foreach ($rowValue[$this->fieldName] ?? [] as $file) {
+            foreach ($rowValue[$this->name] ?? [] as $file) {
                 if ($file && is_file($file)) {
                     $this->addMediaFile($entry, $file, $row);
                 }
@@ -103,7 +103,7 @@ class MediaMultipleFiles extends MediaUploader
         $items = CRUD::getRequest()->input($key.$this->parentField) ?? [];
 
         array_walk($items, function (&$key, $value) use ($delimiter) {
-            $requestValue = $key[$this->fieldName] ?? null;
+            $requestValue = $key[$this->name] ?? null;
             if (is_string($requestValue) && $delimiter) {
                 $key = explode($delimiter, $requestValue);
             } else {

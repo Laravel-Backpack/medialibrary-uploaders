@@ -20,11 +20,11 @@ class MediaSingleFile extends MediaUploader
         $filesToClear = $this->getFromRequestAsArray('_clear_');
         $orderedFiles = $this->getFromRequestAsArray('_order_');
         
-        $previousFiles = array_column($this->getPreviousRepeatableMedia($entry), $this->fieldName);
+        $previousFiles = array_column($this->getPreviousRepeatableMedia($entry), $this->name);
 
         foreach ($values as $row => $rowValue) {
-            if (isset($rowValue[$this->fieldName]) && is_file($rowValue[$this->fieldName])) {
-                $this->addMediaFile($entry, $rowValue[$this->fieldName], $row);
+            if (isset($rowValue[$this->name]) && is_file($rowValue[$this->name])) {
+                $this->addMediaFile($entry, $rowValue[$this->name], $row);
             }
         }
 
@@ -49,7 +49,7 @@ class MediaSingleFile extends MediaUploader
         $items = CRUD::getRequest()->input($key.$this->parentField) ?? [];
 
         array_walk($items, function (&$key, $value) {
-            $key = $key[$this->fieldName] ?? null;
+            $key = $key[$this->name] ?? null;
         });
 
         return $items;
@@ -57,11 +57,11 @@ class MediaSingleFile extends MediaUploader
 
     private function saveUpload($entry, $value = null): void
     {
-        $value = $value ?? CRUD::getRequest()->file($this->fieldName);
+        $value = $value ?? CRUD::getRequest()->file($this->name);
        
         $previousFile = $this->get($entry);
 
-        if ($previousFile && ($value && is_a($value, UploadedFile::class) || request()->has($this->fieldName))) {
+        if ($previousFile && ($value && is_a($value, UploadedFile::class) || request()->has($this->name))) {
             $previousFile->delete();
         }
 

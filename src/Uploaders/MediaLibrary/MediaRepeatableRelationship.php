@@ -18,20 +18,20 @@ class MediaRepeatableRelationship extends MediaRepeatable
 
     public function save(Model $entry, $value = null)
     {
-        $values = collect(request()->get($this->fieldName));
-        $files = collect(request()->file($this->fieldName));
+        $values = collect(request()->get($this->name));
+        $files = collect(request()->file($this->name));
 
         $value = $this->mergeValuesRecursive($values, $files);
 
-        $modelCount = CRUD::get('model_count_'.$this->fieldName);
+        $modelCount = CRUD::get('model_count_'.$this->name);
 
         $value = collect($values)->slice($modelCount, 1);
 
         foreach ($this->repeatableUploads as $upload) {
-            if (isset($value[$modelCount][$upload->fieldName])) {
-                $upload->save($entry, $value[$modelCount][$upload->fieldName]);
+            if (isset($value[$modelCount][$upload->name])) {
+                $upload->save($entry, $value[$modelCount][$upload->name]);
             }
-            $entry->offsetUnset($upload->fieldName);
+            $entry->offsetUnset($upload->name);
         }
         
         return $entry;
@@ -50,9 +50,9 @@ class MediaRepeatableRelationship extends MediaRepeatable
         }
 
         if (is_a($media, 'Spatie\MediaLibrary\MediaCollections\Models\Media')) {
-            $entry->{$upload->fieldName} = $upload->getMediaIdentifier($media, $entry);
+            $entry->{$upload->name} = $upload->getMediaIdentifier($media, $entry);
         } else {
-            $entry->{$upload->fieldName} = $media->map(function ($item) use ($entry, $upload) {
+            $entry->{$upload->name} = $media->map(function ($item) use ($entry, $upload) {
                 return $upload->getMediaIdentifier($item, $entry);
             })->toArray();
         }

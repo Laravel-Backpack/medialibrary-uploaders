@@ -15,12 +15,12 @@ class RepeatableRelationship extends RepeatableUploader
 
     public function save(Model $entry, $value = null)
     {
-        $values = collect(request()->get($this->fieldName));
-        $files = collect(request()->file($this->fieldName));
+        $values = collect(request()->get($this->name));
+        $files = collect(request()->file($this->name));
 
         $value = $this->mergeValuesRecursive($values, $files);
 
-        $modelCount = CRUD::get('model_count_'.$this->fieldName);
+        $modelCount = CRUD::get('model_count_'.$this->name);
 
         $value = collect($values)->slice($modelCount, 1);
 
@@ -33,8 +33,8 @@ class RepeatableRelationship extends RepeatableUploader
 
     protected function performSave($entry, $upload, $value, $row = null)
     {
-        if (isset($value[$row][$upload->fieldName])) {
-            $entry->{$upload->fieldName} = $upload->save($entry, $value[$row][$upload->fieldName]);
+        if (isset($value[$row][$upload->name])) {
+            $entry->{$upload->name} = $upload->save($entry, $value[$row][$upload->name]);
         }
     }
 }
