@@ -15,7 +15,7 @@ class MediaSingleFile extends MediaUploader
 
     private function saveRepeatableUpload($entry): void
     {
-        $values = CRUD::getRequest()->file($this->parentField) ?? [];
+        $values = CRUD::getRequest()->file($this->repeatableContainerName) ?? [];
         
         $filesToClear = $this->getFromRequestAsArray('_clear_');
         $orderedFiles = $this->getFromRequestAsArray('_order_');
@@ -46,7 +46,7 @@ class MediaSingleFile extends MediaUploader
 
     private function getFromRequestAsArray(string $key): array
     {
-        $items = CRUD::getRequest()->input($key.$this->parentField) ?? [];
+        $items = CRUD::getRequest()->input($key.$this->repeatableContainerName) ?? [];
 
         array_walk($items, function (&$key, $value) {
             $key = $key[$this->name] ?? null;

@@ -93,12 +93,12 @@ abstract class MediaUploader extends Uploader
     {
         if ($this->isMultiple || $this->isRepeatable) {
             return $entry->getMedia($this->collection, function ($media) use ($entry) {
-                return $media->getCustomProperty('name') === $this->name && $media->getCustomProperty('parentField') === $this->parentField && $entry->id === $media->model_id;
+                return $media->getCustomProperty('name') === $this->name && $media->getCustomProperty('repeatableContainerName') === $this->repeatableContainerName && $entry->id === $media->model_id;
             });
         }
 
         return $entry->getFirstMedia($this->collection, function ($media) use ($entry) {
-            return $media->getCustomProperty('name') === $this->name && $media->getCustomProperty('parentField') === $this->parentField && $entry->id === $media->model_id;
+            return $media->getCustomProperty('name') === $this->name && $media->getCustomProperty('repeatableContainerName') === $this->repeatableContainerName && $entry->id === $media->model_id;
         });
     }
 
@@ -166,7 +166,7 @@ abstract class MediaUploader extends Uploader
 
     public function getCustomProperties()
     {
-        return ['name' => $this->name, 'parentField' => $this->parentField, 'repeatableRow' => $this->order];
+        return ['name' => $this->name, 'repeatableContainerName' => $this->repeatableContainerName, 'repeatableRow' => $this->order];
     }
 
     public function getMediaIdentifier($media, $entry = null)

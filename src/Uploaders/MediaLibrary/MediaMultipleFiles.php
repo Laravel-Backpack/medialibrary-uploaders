@@ -28,7 +28,7 @@ class MediaMultipleFiles extends MediaUploader
 
     private function saveUploadMultiple($entry, $value = null): void
     {
-        $filesToDelete = CRUD::getRequest()->get('clear_'.($this->parentField ?? $this->name));
+        $filesToDelete = CRUD::getRequest()->get('clear_'.($this->repeatableContainerName ?? $this->name));
 
         $filesToDelete = collect($filesToDelete)->flatten()->toArray();
 
@@ -58,7 +58,7 @@ class MediaMultipleFiles extends MediaUploader
         $filesToDelete = collect($this->getFromRequestAsArray('clear_'))->flatten()->toArray();
         $fileOrder = $this->getFromRequestAsArray('_order_', ',');
 
-        $value = CRUD::getRequest()->file($this->parentField) ?? [];
+        $value = CRUD::getRequest()->file($this->repeatableContainerName) ?? [];
 
         foreach ($value as $row => $rowValue) {
             foreach ($rowValue[$this->name] ?? [] as $file) {
@@ -100,7 +100,7 @@ class MediaMultipleFiles extends MediaUploader
 
     private function getFromRequestAsArray(string $key, $delimiter = null): array
     {
-        $items = CRUD::getRequest()->input($key.$this->parentField) ?? [];
+        $items = CRUD::getRequest()->input($key.$this->repeatableContainerName) ?? [];
 
         array_walk($items, function (&$key, $value) use ($delimiter) {
             $requestValue = $key[$this->name] ?? null;

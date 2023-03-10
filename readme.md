@@ -162,7 +162,7 @@ CRUD::field('main_image')
 
 ### Custom properties
 
-You can normally assign custom properties to your media with `->withCustomProperties([])` as stated in spatie documentation, but please be advise that `name`, `parentField` and `repeatableRow` are **reserved keywords** and Backpack values will **always** overwrite yours.
+You can normally assign custom properties to your media with `->withCustomProperties([])` as stated in spatie documentation, but please be advise that `name`, `repeatableContainerName` and `repeatableRow` are **reserved keywords** and Backpack values will **always** overwrite yours.
 
 ```php
 'whenSaving' => function($media) {
@@ -173,7 +173,7 @@ You can normally assign custom properties to your media with `->withCustomProper
     }
 
 // the saved custom properties will be: 
-//  - [my_property => value, name => main_image, repeatableRow => null, parentField => null]`
+//  - [my_property => value, name => main_image, repeatableRow => null, repeatableContainerName => null]`
 ```
 
 

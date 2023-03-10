@@ -14,7 +14,12 @@ abstract class Uploader implements UploaderInterface
 
     public $name;
 
-    public $parentField;
+    /**
+     * When inside a repeatable container, indicates the container name
+     *
+     * @var string|null
+     */
+    public $repeatableContainerName = null;
 
     public $fileName = null;
 
@@ -92,18 +97,18 @@ abstract class Uploader implements UploaderInterface
         return $this;
     }
 
-    public function repeats(string $parentField)
+    public function repeats(string $repeatableContainerName)
     {
         $this->isRepeatable = true;
 
-        $this->parentField = $parentField;
+        $this->repeatableContainerName = $repeatableContainerName;
 
         return $this;
     }
 
     protected function getFileOrderFromRequest()
     {
-        $items = CRUD::getRequest()->input('_order_'.$this->parentField) ?? [];
+        $items = CRUD::getRequest()->input('_order_'.$this->repeatableContainerName) ?? [];
 
         array_walk($items, function (&$key, $value) {
             $requestValue = $key[$this->name] ?? null;
@@ -120,7 +125,7 @@ abstract class Uploader implements UploaderInterface
 
     protected function getPreviousRepeatableValues(Model $entry)
     {
-        $previousValues = json_decode($entry->getOriginal($this->parentField), true);
+        $previousValues = json_decode($entry->getOriginal($this->repeatableContainerName), true);
         if (! empty($previousValues)) {
             $previousValues = array_column($previousValues, $this->name);
         }
