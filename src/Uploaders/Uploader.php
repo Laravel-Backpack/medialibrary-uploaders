@@ -11,24 +11,18 @@ use Closure;
 use Backpack\CRUD\app\Library\CrudPanel\CrudField;
 use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
 use Backpack\MediaLibraryUploads\Traits\HasCrudObjectType;
+use Backpack\MediaLibraryUploads\Traits\HasName;
 
 abstract class Uploader implements UploaderInterface
 {
-    use HasCrudObjectType;
-    
+    use HasCrudObjectType, HasName;
+
     /**
      * Indicates if this uploader instance is inside a repeatable container
      *
      * @var boolean
      */
     public $isRepeatable = false;
-
-    /**
-     * The name of the uploader AKA CrudField/Column name.
-     *
-     * @var string
-     */
-    public $name;
 
     /**
      * When inside a repeatable container, indicates the container name

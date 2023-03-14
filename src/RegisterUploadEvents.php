@@ -11,7 +11,10 @@ use Exception;
 
 class RegisterUploadEvents
 {
-    public function __construct(private readonly CrudField|CrudColumn $crudObject, private readonly array $uploadDefinition, private $defaultUploaders){}
+    public function __construct(private readonly CrudField|CrudColumn $crudObject, private readonly array $uploadDefinition, private $defaultUploaders)
+    {
+    }
+
     /**
      * From the given crud object and upload definition provide the event registry
      * service so that uploads are stored and retrieved automatically
@@ -55,7 +58,7 @@ class RegisterUploadEvents
 
     /**
      * Register the saving and retrieved events on model to handle the upload process.
-     * In case of CrudColumn we only register the retrieved event. 
+     * In case of CrudColumn we only register the retrieved event.
      *
      * @param string $model
      * @param UploaderInterface|RepeatableUploaderInterface $uploader
@@ -65,13 +68,13 @@ class RegisterUploadEvents
     {
         if ($uploader->getCrudObjectType() === 'field') {
             $model::saving(function ($entry) use ($uploader) {
-                $createdModelCount = 'model_count_'.$uploader->getName();
+                $updatedCountKey = 'updated_'.$uploader->getName().'_count';
 
-                CRUD::set($createdModelCount, CRUD::get($createdModelCount) ?? 0);
+                CRUD::set($updatedCountKey, CRUD::get($updatedCountKey) ?? 0);
 
                 $entry = $uploader->processFileUpload($entry);
 
-                CRUD::set($createdModelCount, CRUD::get($createdModelCount) + 1);
+                CRUD::set($updatedCountKey, CRUD::get($updatedCountKey) + 1);
             });
         }
 
@@ -118,9 +121,9 @@ class RegisterUploadEvents
     /**
      * Return the uploader for the object beeing configured.
      * We will give priority to any uploader provided by `uploader => App\SomeUploaderClass` on upload definition.
-     * 
+     *
      * If none provided, we will use the Backpack defaults for the given object type.
-     * 
+     *
      * Throws an exception in case no uploader for the given object type is found.
      *
      * @param array $crudObject

@@ -20,7 +20,7 @@ class RepeatableRelationship extends RepeatableUploader
 
         $value = $this->mergeValuesRecursive($values, $files);
 
-        $modelCount = CRUD::get('model_count_'.$this->name);
+        $modelCount = CRUD::get('uploaded_'.$this->name.'_count');
 
         $value = collect($values)->slice($modelCount, 1);
 
