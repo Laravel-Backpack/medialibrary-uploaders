@@ -12,7 +12,7 @@ trait HasName
     public string $name;
 
     /**
-     * Return the crud object type, field or column
+     * Return the name of the uploader, field or column
      *
      * @return string
      */

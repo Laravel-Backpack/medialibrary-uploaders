@@ -14,7 +14,7 @@ use Backpack\CRUD\ViewNamespaces;
 trait AutomaticServiceProvider
 {
     public $path;
-    
+
     public function __construct($app)
     {
         $this->app = $app;
@@ -84,12 +84,17 @@ trait AutomaticServiceProvider
         }
     }
 
+    public function register(): void
+    {
+        $this->autoRegister();
+    }
+
     /**
      * Register any package services.
      *
      * @return void
      */
-    public function register(): void
+    public function autoRegister(): void
     {
         if ($this->packageDirectoryExistsAndIsNotEmpty('config')) {
             $this->mergeConfigFrom($this->packageConfigFile(), $this->vendorNameDotPackageName());

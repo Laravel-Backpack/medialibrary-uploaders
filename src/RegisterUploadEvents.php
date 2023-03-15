@@ -11,7 +11,7 @@ use Exception;
 
 class RegisterUploadEvents
 {
-    public function __construct(private readonly CrudField|CrudColumn $crudObject, private readonly array $uploadDefinition, private $defaultUploaders)
+    public function __construct(private readonly CrudField|CrudColumn $crudObject, private readonly array $uploadDefinition)
     {
     }
 
@@ -24,27 +24,21 @@ class RegisterUploadEvents
      * @param array $defaultUploaders
      * @return void
      */
-    public static function handle($crudObject, $uploadDefinition, $defaultUploaders = []): void
+    public static function handle($crudObject, $uploadDefinition): void
     {
-        $instance = new self($crudObject, $uploadDefinition, $defaultUploaders);
+        $instance = new self($crudObject, $uploadDefinition);
 
         $attributes = $crudObject->getAttributes();
 
         $attributes['entryClass'] = $attributes['model'] ?? get_class($crudObject->crud()->getModel());
 
-        // we use this check because `MyCustomField extends CrudField` is still a CrudField instance.
-        $crudObjectType = is_a($crudObject, CrudField::class) ? CrudField::class : (is_a($crudObject, CrudColumn::class) ? CrudColumn::class : null);
+        $crudObjectType = is_a($crudObject, CrudField::class) ? 'field' : (is_a($crudObject, CrudColumn::class) ? 'column' : null);
 
-        switch($crudObjectType) {
-            case CrudField::class:
-                $attributes['crudObjectType'] = 'field';
-                break;
-            case CrudColumn::class:
-                $attributes['crudObjectType'] = 'column';
-                break;
-            default:
+        if(!$crudObjectType) {
                 abort(500, 'Upload handlers only work for CrudField and CrudColumn classes.');
         }
+      
+        $attributes['crudObjectType'] = $crudObjectType;
 
         if (! isset($attributes['subfields'])) {
             $uploaderType = $instance->getUploader($attributes, $uploadDefinition);
@@ -66,6 +60,10 @@ class RegisterUploadEvents
      */
     private function setupModelEvents(string $model, UploaderInterface|RepeatableUploaderInterface $uploader): void
     {
+        if(app('UploadStore')->isUploadHandled($uploader->getName())) {
+            return;
+        }
+
         if ($uploader->getCrudObjectType() === 'field') {
             $model::saving(function ($entry) use ($uploader) {
                 $updatedCountKey = 'updated_'.$uploader->getName().'_count';
@@ -81,6 +79,8 @@ class RegisterUploadEvents
         $model::retrieved(function ($entry) use ($uploader) {
             $entry = $uploader->retrieveUploadedFile($entry);
         });
+
+        app('UploadStore')->markAsHandled($uploader->getName());
     }
 
     /**
@@ -113,7 +113,7 @@ class RegisterUploadEvents
         }
 
         foreach ($repeatableDefinitions as $model => $uploaderTypes) {
-            $repeatableDefinition = $this->defaultUploaders['repeatable']::for($crudObject)->uploads(...$uploaderTypes);
+            $repeatableDefinition = app('UploadStore')->getUploadFor('repeatable')::for($crudObject)->uploads(...$uploaderTypes);
             $this->setupModelEvents($model, $repeatableDefinition);
         }
     }
@@ -137,8 +137,8 @@ class RegisterUploadEvents
             return $uploadDefinition['uploaderType']::for($crudObject, $uploadDefinition);
         }
 
-        if (isset($this->defaultUploaders[$crudObject['type']])) {
-            return $this->defaultUploaders[$crudObject['type']]::for($crudObject, $uploadDefinition);
+        if (app('UploadStore')->hasUploadFor($crudObject['type'])) {
+            return app('UploadStore')->getUploadFor($crudObject['type'])::for($crudObject, $uploadDefinition);
         }
 
         throw new Exception('Undefined upload type for '.$crudObject['crudObjectType'].' type: '.$crudObject['type']);
