@@ -223,10 +223,20 @@ By default it uses the `public` disk.
 
 Don't forget to do `php artisan storage:link`.
 
-`withUploads()` accepts only two configurations: `disk` and `path`. 
+`withUploads()` accepts configurations like: `disk` and `path`, `fileName` (a closure)
 
 ```php
 CRUD::field('avatar')->type('upload')->withUploads([
     'path' => 'avatars' // will store the file in `{{DISK_DIRECTORY}}/avatars/file.jpg`
 ])
+```
+
+To enable the ability to delete files when the entry is deleted, developer should 
+add in their controller `setup()` method:
+
+```php
+// ...
+CRUD::operation('delete', function () {
+    $this->setupCreateOperation(); 
+});
 ```
