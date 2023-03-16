@@ -14,5 +14,7 @@ interface RepeatableUploaderInterface
 
     public function retrieveUploadedFile(Model $entry);
 
+    public function deleteUploadedFile(Model $entry);
+
     public function __construct(array $crudObject);
 }

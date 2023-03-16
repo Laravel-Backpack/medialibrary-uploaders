@@ -9,7 +9,7 @@ use Backpack\MediaLibraryUploads\Interfaces\RepeatableUploaderInterface;
 use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Exception;
 
-class RegisterUploadEvents
+final class RegisterUploadEvents
 {
     public function __construct(private readonly CrudField|CrudColumn $crudObject, private readonly array $uploadDefinition)
     {
@@ -34,10 +34,10 @@ class RegisterUploadEvents
 
         $crudObjectType = is_a($crudObject, CrudField::class) ? 'field' : (is_a($crudObject, CrudColumn::class) ? 'column' : null);
 
-        if(!$crudObjectType) {
-                abort(500, 'Upload handlers only work for CrudField and CrudColumn classes.');
+        if (! $crudObjectType) {
+            abort(500, 'Upload handlers only work for CrudField and CrudColumn classes.');
         }
-      
+
         $attributes['crudObjectType'] = $crudObjectType;
 
         if (! isset($attributes['subfields'])) {
@@ -60,7 +60,7 @@ class RegisterUploadEvents
      */
     private function setupModelEvents(string $model, UploaderInterface|RepeatableUploaderInterface $uploader): void
     {
-        if(app('UploadStore')->isUploadHandled($uploader->getName())) {
+        if (app('UploadStore')->isUploadHandled($uploader->getName())) {
             return;
         }
 
@@ -78,6 +78,23 @@ class RegisterUploadEvents
 
         $model::retrieved(function ($entry) use ($uploader) {
             $entry = $uploader->retrieveUploadedFile($entry);
+        });
+
+        $model::deleting(function ($entry) use ($uploader) {
+            if (is_a($uploader, RepeatableUploaderInterface::class)) {
+                $uploader->deleteUploadedFile($entry);
+
+                return;
+            }
+            if ($uploader->deleteWhenEntryIsDeleted) {
+                if (! in_array(SoftDeletes::class, class_uses_recursive($entry), true)) {
+                    $uploader->deleteUploadedFile($entry);
+                } else {
+                    if ($entry->forceDeleting === true) {
+                        $uploader->deleteUploadedFile($entry);
+                    }
+                }
+            }
         });
 
         app('UploadStore')->markAsHandled($uploader->getName());

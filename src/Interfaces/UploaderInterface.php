@@ -10,6 +10,8 @@ interface UploaderInterface
 
     public function retrieveUploadedFile(Model $entry);
 
+    public function deleteUploadedFile(Model $entry);
+
     public static function for(array $field, array $configuration);
 
     public function __construct(array $crudObject, array $configuration);

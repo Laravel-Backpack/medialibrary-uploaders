@@ -2,25 +2,33 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
+use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
+use Backpack\CRUD\app\Library\CrudPanel\CrudField;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
-use Closure;
-use Backpack\CRUD\app\Library\CrudPanel\CrudField;
-use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
 use Backpack\MediaLibraryUploads\Traits\HasCrudObjectType;
 use Backpack\MediaLibraryUploads\Traits\HasName;
+use Closure;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 abstract class Uploader implements UploaderInterface
 {
     use HasCrudObjectType, HasName;
 
     /**
+     * Indicates the uploaded file should be deleted when entry is deleted
+     *
+     * @var bool
+     */
+    public $deleteWhenEntryIsDeleted = true;
+
+    /**
      * Indicates if this uploader instance is inside a repeatable container
      *
-     * @var boolean
+     * @var bool
      */
     public $isRepeatable = false;
 
@@ -48,7 +56,7 @@ abstract class Uploader implements UploaderInterface
     /**
      * Indicates if the upload handles multiple files
      *
-     * @var boolean
+     * @var bool
      */
     public $isMultiple = false;
 
@@ -69,14 +77,14 @@ abstract class Uploader implements UploaderInterface
     /**
      * Should the url to the object be a temporary one (eg: s3)
      *
-     * @var boolean
+     * @var bool
      */
     public $temporary = false;
 
     /**
-     * When using temporary urls, defines the time that the url 
+     * When using temporary urls, defines the time that the url
      * should be available in minutes.
-     * 
+     *
      * By default 1 minute
      *
      * @var int
@@ -86,7 +94,7 @@ abstract class Uploader implements UploaderInterface
     /**
      * Indicates if the upload is relative to a relationship field/column
      *
-     * @var boolean
+     * @var bool
      */
     public $isRelationship = false;
 
@@ -98,13 +106,14 @@ abstract class Uploader implements UploaderInterface
         $this->expiration = $configuration['expiration'] ?? $this->expiration;
         $this->entryClass = $crudObject['entryClass'];
         $this->path = $configuration['path'] ?? $crudObject['prefix'] ?? $this->path;
-        $this->path = empty($this->path) ? $this->path : Str::of($this->path)->finish('/');
+        $this->path = empty($this->path) ? $this->path : Str::of($this->path)->finish('/')->value;
         $this->crudObjectType = $crudObject['crudObjectType'];
         $this->fileName = $configuration['fileName'] ?? $this->fileName;
+        $this->deleteWhenEntryIsDeleted = $configuration['whenDelete'] ?? $this->deleteWhenEntryIsDeleted;
     }
 
     /**
-     * An abstract function that all uploaders must implement with the saving process. 
+     * An abstract function that all uploaders must implement with the saving process.
      *
      * @param Model $entry
      * @param mixed $values
@@ -130,7 +139,7 @@ abstract class Uploader implements UploaderInterface
      *
      * @return string
      */
-    public function getName() 
+    public function getName()
     {
         return $this->name;
     }
@@ -158,7 +167,7 @@ abstract class Uploader implements UploaderInterface
     /**
      * Return the uploader temporary option
      *
-     * @return boolean
+     * @return bool
      */
     public function getTemporary()
     {
@@ -174,7 +183,6 @@ abstract class Uploader implements UploaderInterface
     {
         return $this->expiration;
     }
-
 
     /**
      * The function called in the retrieved event that handles the display of uploaded values
@@ -198,7 +206,30 @@ abstract class Uploader implements UploaderInterface
     }
 
     /**
-     * Build an uploader instance. 
+     * The function called in the deleting event to delete the uploaded files upon entry deletion
+     *
+     * @param Model $entry
+     * @return void
+     */
+    public function deleteUploadedFile(Model $entry)
+    {
+        $values = $entry->{$this->name};
+
+        if ($this->isMultiple) {
+            if (! isset($entry->getCasts()[$this->name]) && is_string($values)) {
+                $values = json_decode($values, true);
+            }
+        } else {
+            $values = (array) Str::after($values, $this->path);
+        }
+
+        foreach ($values as $value) {
+            Storage::disk($this->disk)->delete($this->path.$value);
+        }
+    }
+
+    /**
+     * Build an uploader instance.
      *
      * @param array $crudObject
      * @param array $definition
@@ -221,15 +252,14 @@ abstract class Uploader implements UploaderInterface
         return $this;
     }
 
-
     /**
-     * Set relationship attribute in uploader. 
-     * When true, it also removes the repeatable in case the relationship is handled 
-     * by repeatable interface. 
+     * Set relationship attribute in uploader.
+     * When true, it also removes the repeatable in case the relationship is handled
+     * by repeatable interface.
      * This is because the uploads are only repeatable on the "main model", but they represent
      * one entry per row. (not repeatable in the "relationship model")
      *
-     * @param boolean $isRelationship
+     * @param bool $isRelationship
      * @return self
      */
     public function relationship(bool $isRelationship): self
@@ -243,7 +273,7 @@ abstract class Uploader implements UploaderInterface
     }
 
     /**
-     * Set the repeatable attribute to true in the uploader and the 
+     * Set the repeatable attribute to true in the uploader and the
      * corresponding container name.
      *
      * @param string $repeatableContainerName
@@ -259,7 +289,7 @@ abstract class Uploader implements UploaderInterface
     }
 
     /**
-     * Repeatable items send _order_ parameter in the request. 
+     * Repeatable items send _order_ parameter in the request.
      * This olds the information for uploads inside repeatable containers.
      *
      * @return array
@@ -349,9 +379,9 @@ abstract class Uploader implements UploaderInterface
      * @param mixed $file
      * @return string|null
      */
-    private function fileNameFrom($file) 
+    private function fileNameFrom($file)
     {
-        if(is_callable($this->fileName)) {
+        if (is_callable($this->fileName)) {
             return ($this->fileName)($file, $this);
         }
 
@@ -360,7 +390,7 @@ abstract class Uploader implements UploaderInterface
 
     /**
      * Set up the upload attributes in the field/column
-     * 
+     *
      * @param CrudField|CrudColumn $crudObject
      * @return void
      */

@@ -8,6 +8,7 @@ use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Backpack\MediaLibraryUploads\Traits\HasCrudObjectType;
 use Backpack\MediaLibraryUploads\Traits\HasName;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class RepeatableUploader implements RepeatableUploaderInterface
 {
@@ -117,6 +118,36 @@ class RepeatableUploader implements RepeatableUploaderInterface
         }
 
         return $entry;
+    }
+
+    /**
+     * The function called in the deleting event to delete the uploaded files upon entry deletion
+     *
+     * @param Model $entry
+     * @return void
+     */
+    public function deleteUploadedFile(Model $entry)
+    {
+        $repeatableValues = collect($entry->{$this->getName()});
+        foreach ($this->repeatableUploads as $upload) {
+            if (! $upload->deleteWhenEntryIsDeleted) {
+                continue;
+            }
+            $values = $repeatableValues->pluck($upload->getName())->toArray();
+            foreach ($values as $value) {
+                if (! $value) {
+                    continue;
+                }
+                if (is_array($value)) {
+                    foreach ($value as $subvalue) {
+                        Storage::disk($upload->disk)->delete($upload->path.$subvalue);
+                    }
+
+                    continue;
+                }
+                Storage::disk($upload->disk)->delete($upload->path.$value);
+            }
+        }
     }
 
     protected function retrieveFiles($entry, $upload)

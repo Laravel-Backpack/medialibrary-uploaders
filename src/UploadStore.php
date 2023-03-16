@@ -2,10 +2,6 @@
 
 namespace Backpack\MediaLibraryUploads;
 
-use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
-use Backpack\CRUD\app\Library\CrudPanel\CrudField;
-use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
-
 final class UploadStore
 {
     private array $uploaders;

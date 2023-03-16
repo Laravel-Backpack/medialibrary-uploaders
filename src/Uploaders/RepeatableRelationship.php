@@ -4,10 +4,12 @@ namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class RepeatableRelationship extends RepeatableUploader
 {
-    public function __construct(array $field) 
+    public function __construct(array $field)
     {
         parent::__construct($field);
         $this->isRelationship = true;
@@ -25,16 +27,43 @@ class RepeatableRelationship extends RepeatableUploader
         $value = collect($values)->slice($modelCount, 1);
 
         foreach ($this->repeatableUploads as $upload) {
-            $this->performSave($entry, $upload, $value, $modelCount);
+            if (isset($value[$modelCount][$upload->name])) {
+                $entry->{$upload->name} = $upload->save($entry, $value[$modelCount][$upload->name]);
+            }
         }
-        
+
         return $entry;
     }
 
-    protected function performSave($entry, $upload, $value, $row = null)
+    public function processFileUpload(Model $entry)
     {
-        if (isset($value[$row][$upload->name])) {
-            $entry->{$upload->name} = $upload->save($entry, $value[$row][$upload->name]);
+        $entry = $this->save($entry);
+
+        return $entry;
+    }
+
+    /**
+     * The function called in the deleting event to delete the uploaded files upon entry deletion
+     *
+     * @param Model $entry
+     * @return void
+     */
+    public function deleteUploadedFile(Model $entry)
+    {
+        foreach ($this->repeatableUploads as $upload) {
+            $values = $entry->{$upload->name};
+
+            if ($upload->isMultiple) {
+                if (! isset($entry->getCasts()[$upload->name]) && is_string($values)) {
+                    $values = json_decode($values, true);
+                }
+            } else {
+                $values = (array) Str::after($values, $upload->path);
+            }
+
+            foreach ($values as $value) {
+                Storage::disk($upload->disk)->delete($upload->path.$value);
+            }
         }
     }
 }
