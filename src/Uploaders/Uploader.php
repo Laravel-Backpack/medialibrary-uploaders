@@ -192,8 +192,6 @@ abstract class Uploader implements UploaderInterface
      */
     public function retrieveUploadedFile(Model $entry)
     {
-        $this->setupUploadConfigsInCrudObject(CRUD::{$this->crudObjectType}($this->name));
-
         $value = $entry->{$this->name};
 
         if ($this->isMultiple && ! isset($entry->getCasts()[$this->name]) && is_string($value)) {
@@ -386,19 +384,5 @@ abstract class Uploader implements UploaderInterface
         }
 
         return $this->fileName;
-    }
-
-    /**
-     * Set up the upload attributes in the field/column
-     *
-     * @param CrudField|CrudColumn $crudObject
-     * @return void
-     */
-    protected function setupUploadConfigsInCrudObject(CrudField|CrudColumn $crudObject)
-    {
-        $attributes = $crudObject->getAttributes();
-        $crudObject->upload(true)
-            ->disk($attributes['disk'] ?? $this->disk)
-            ->prefix($attributes['prefix'] ?? $this->path);
     }
 }

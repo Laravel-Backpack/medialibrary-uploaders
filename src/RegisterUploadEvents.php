@@ -43,7 +43,7 @@ final class RegisterUploadEvents
         if (! isset($attributes['subfields'])) {
             $uploaderType = $instance->getUploader($attributes, $uploadDefinition);
             $instance->setupModelEvents($attributes['entryClass'], $uploaderType);
-
+            self::setupUploadConfigsInCrudObject($crudObject, $uploaderType);
             return;
         }
 
@@ -159,5 +159,17 @@ final class RegisterUploadEvents
         }
 
         throw new Exception('Undefined upload type for '.$crudObject['crudObjectType'].' type: '.$crudObject['type']);
+    }
+
+    /**
+     * Set up the upload attributes in the field/column
+     *
+     * @param CrudField|CrudColumn $crudObject
+     * @param UploaderInterface $uploader
+     * @return void
+     */
+    private static function setupUploadConfigsInCrudObject(CrudField|CrudColumn $crudObject, UploaderInterface $uploader)
+    {
+        $crudObject->upload(true)->disk($uploader->disk)->prefix($uploader->path);
     }
 }
