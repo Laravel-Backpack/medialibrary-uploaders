@@ -2,6 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
@@ -20,12 +21,12 @@ class MultipleFiles extends Uploader
 
     private function saveMultipleFiles($entry, $value = null)
     {
-        $filesToDelete = request()->get('clear_'.$this->name);
+        $filesToDelete = CRUD::getRequest()->get('clear_'.$this->name);
 
-        $value = $value ?? request()->file($this->name);
+        $value = $value ?? CRUD::getRequest()->file($this->name);
 
         $previousFiles = $entry->getOriginal($this->name) ?? [];
-
+        
         if (! is_array($previousFiles) && is_string($previousFiles)) {
             $previousFiles = json_decode($previousFiles, true);
         }
