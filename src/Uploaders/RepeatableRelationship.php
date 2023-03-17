@@ -24,11 +24,11 @@ class RepeatableRelationship extends RepeatableUploader
 
         $modelCount = CRUD::get('uploaded_'.$this->name.'_count');
 
-        $value = collect($values)->slice($modelCount, 1);
+        $value = $value->slice($modelCount, 1)->toArray();
 
         foreach ($this->repeatableUploads as $upload) {
-            if (isset($value[$modelCount][$upload->name])) {
-                $entry->{$upload->name} = $upload->save($entry, $value[$modelCount][$upload->name]);
+            if (array_key_exists($modelCount, $value) && isset($value[$modelCount][$upload->getName()])) {
+                $entry->{$upload->getName()} = $upload->save($entry, $value[$modelCount][$upload->getName()]);
             }
         }
 

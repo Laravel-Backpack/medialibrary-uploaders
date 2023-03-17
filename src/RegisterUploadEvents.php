@@ -66,7 +66,7 @@ final class RegisterUploadEvents
 
         if ($uploader->getCrudObjectType() === 'field') {
             $model::saving(function ($entry) use ($uploader) {
-                $updatedCountKey = 'updated_'.$uploader->getName().'_count';
+                $updatedCountKey = 'uploaded_'.$uploader->getName().'_count';
 
                 CRUD::set($updatedCountKey, CRUD::get($updatedCountKey) ?? 0);
 
