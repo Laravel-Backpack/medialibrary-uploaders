@@ -4,7 +4,7 @@ namespace Backpack\MediaLibraryUploads\Uploaders\MediaLibrary;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploads\ConstrainedFileAdder;
-use Backpack\MediaLibraryUploads\Uploaders\Uploader;
+use Backpack\CRUD\app\Library\CrudPanel\Uploads\Uploaders\Uploader;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -113,15 +113,13 @@ abstract class MediaUploader extends Uploader
     }
 
     /**
-     * Undocumented function
+     * Returns the media string for the entry
      *
      * @param HasMedia|Model $entry
      * @return Model|null
      */
     public function retrieveUploadedFile(HasMedia|Model $entry)
-    {
-        $this->setupUploadConfigsInCrudObject(CRUD::{$this->crudObjectType}($this->name));
-        
+    {        
         $media = $this->get($entry);
      
         if (! $media) {
