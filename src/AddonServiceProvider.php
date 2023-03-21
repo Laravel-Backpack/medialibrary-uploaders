@@ -4,6 +4,7 @@ namespace Backpack\MediaLibraryUploads;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
 use Backpack\CRUD\app\Library\CrudPanel\CrudField;
+use Backpack\CRUD\app\Library\CrudPanel\Uploads\RegisterUploadEvents;
 use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaMultipleFiles;
 use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaRepeatable;
 use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaSingleBase64Image;
@@ -24,33 +25,27 @@ class AddonServiceProvider extends ServiceProvider
     {
         $this->autoboot();
 
+        //add media uploaders to UploadStore
+        app('UploadStore')->addUploaders([
+            'image'           => MediaSingleBase64Image::class,
+            'upload'          => MediaSingleFile::class,
+            'upload_multiple' => MediaMultipleFiles::class,
+            'repeatable'      => MediaRepeatable::class,
+        ], 'media');
+
         CrudField::macro('withMedia', function ($uploadDefinition = []) {
+            $uploadDefinition['uploaders'] = 'media';
+
             /** @var CrudField|CrudColumn $this */
-
-            // when using media, we should override the default uploaders
-            app('UploadStore')->addUploaders([
-                'image'           => MediaSingleBase64Image::class,
-                'upload'          => MediaSingleFile::class,
-                'upload_multiple' => MediaMultipleFiles::class,
-                'repeatable'      => MediaRepeatable::class,
-            ]);
-
             RegisterUploadEvents::handle($this, $uploadDefinition);
-        
+
             return $this;
         });
 
         CrudColumn::macro('withMedia', function ($uploadDefinition = []) {
+            $uploadDefinition['uploaders'] = 'media';
+
             /** @var CrudField|CrudColumn $this */
-
-            // when using media, we should override the default uploaders
-            app('UploadStore')->addUploaders([
-                'image'           => MediaSingleBase64Image::class,
-                'upload'          => MediaSingleFile::class,
-                'upload_multiple' => MediaMultipleFiles::class,
-                'repeatable'      => MediaRepeatable::class,
-            ]);
-
             RegisterUploadEvents::handle($this, $uploadDefinition);
 
             return $this;
