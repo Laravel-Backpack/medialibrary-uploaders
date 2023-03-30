@@ -26,7 +26,7 @@ class AddonServiceProvider extends ServiceProvider
         $this->autoboot();
 
         //add media uploaders to UploadStore
-        app('UploadStore')->addUploaders([
+        app('UploadStore')->addUploadersClasses([
             'image'           => MediaSingleBase64Image::class,
             'upload'          => MediaSingleFile::class,
             'upload_multiple' => MediaMultipleFiles::class,
@@ -37,7 +37,7 @@ class AddonServiceProvider extends ServiceProvider
             $uploadDefinition['uploaders'] = 'media';
 
             /** @var CrudField|CrudColumn $this */
-            RegisterUploadEvents::handle($this, $uploadDefinition);
+            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia');
 
             return $this;
         });
@@ -46,7 +46,7 @@ class AddonServiceProvider extends ServiceProvider
             $uploadDefinition['uploaders'] = 'media';
 
             /** @var CrudField|CrudColumn $this */
-            RegisterUploadEvents::handle($this, $uploadDefinition);
+            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia');
 
             return $this;
         });
