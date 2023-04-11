@@ -2,7 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads;
 
-use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
+use Backpack\CRUD\app\Library\Uploaders\Support\Interfaces\UploaderInterface;
 use Spatie\MediaLibrary\MediaCollections\FileAdder;
 
 /**
@@ -14,9 +14,11 @@ class ConstrainedFileAdder
 
     private $uploader;
 
-    public function withCustomProperties(array $properties) {
+    public function withCustomProperties(array $properties)
+    {
         $customProperties = array_merge($properties, $this->uploader->getCustomProperties());
         $this->fileAdder->withCustomProperties($customProperties);
+
         return $this;
     }
 
@@ -37,7 +39,7 @@ class ConstrainedFileAdder
 
     public function toMediaCollectionOnCloudDisk(string $collectionName = 'default')
     {
-        abort(500, 'toMediaCollection() is automatically called by Backpack. You should configure it with: ->withMedia([\'collection\' => \''.$collectionName.'\'])'); 
+        abort(500, 'toMediaCollection() is automatically called by Backpack. You should configure it with: ->withMedia([\'collection\' => \''.$collectionName.'\'])');
     }
 
     public function getFileAdder()

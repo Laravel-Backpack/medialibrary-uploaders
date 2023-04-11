@@ -2,21 +2,23 @@
 
 namespace Backpack\MediaLibraryUploads\Uploaders\MediaLibrary;
 
+use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 use Backpack\MediaLibraryUploads\Uploaders\RepeatableUploader;
 use Illuminate\Database\Eloquent\Model;
-use Backpack\MediaLibraryUploads\Interfaces\UploaderInterface;
 
 class MediaRepeatable extends RepeatableUploader
 {
     public static function for(array $crudObject)
     {
-        if(isset($crudObject['relation_type']) && $crudObject['entity'] !== false) {
+        if (isset($crudObject['relation_type']) && $crudObject['entity'] !== false) {
             return new MediaRepeatableRelationship($crudObject);
         }
+
         return new static($crudObject);
     }
 
-    protected function performSave(Model $entry, UploaderInterface $upload, $values, $row = null) {
+    protected function performSave(Model $entry, UploaderInterface $upload, $values, $row = null)
+    {
         $upload->save($entry, $values->pluck($upload->getName())->toArray());
 
         $values->transform(function ($item) use ($upload) {
@@ -26,9 +28,10 @@ class MediaRepeatable extends RepeatableUploader
         });
 
         return $values;
-    }    
+    }
 
-    protected function retrieveFiles($entry, $upload) {
+    protected function retrieveFiles($entry, $upload)
+    {
         $values = $entry->{$this->name} ?? [];
 
         if (! is_array($values)) {
@@ -37,9 +40,9 @@ class MediaRepeatable extends RepeatableUploader
 
         $uploadValues = $upload->getPreviousRepeatableValues($entry);
         $values = $this->mergeValuesRecursive($values, $uploadValues);
-        
+
         $entry->{$this->name} = $values;
-        
+
         return $entry;
     }
 }

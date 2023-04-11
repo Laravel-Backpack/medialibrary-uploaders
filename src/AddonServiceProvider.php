@@ -4,11 +4,11 @@ namespace Backpack\MediaLibraryUploads;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
 use Backpack\CRUD\app\Library\CrudPanel\CrudField;
-use Backpack\CRUD\app\Library\CrudPanel\Uploads\RegisterUploadEvents;
-use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaMultipleFiles;
-use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaRepeatable;
-use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaSingleBase64Image;
-use Backpack\MediaLibraryUploads\Uploaders\MediaLibrary\MediaSingleFile;
+use Backpack\CRUD\app\Library\Uploaders\Support\RegisterUploadEvents;
+use Backpack\MediaLibraryUploads\Uploaders\MediaMultipleFiles;
+use Backpack\MediaLibraryUploads\Uploaders\MediaRepeatable;
+use Backpack\MediaLibraryUploads\Uploaders\MediaSingleBase64Image;
+use Backpack\MediaLibraryUploads\Uploaders\MediaSingleFile;
 use Illuminate\Support\ServiceProvider;
 
 class AddonServiceProvider extends ServiceProvider
@@ -26,27 +26,23 @@ class AddonServiceProvider extends ServiceProvider
         $this->autoboot();
 
         //add media uploaders to UploadStore
-        app('UploadStore')->addUploadersClasses([
+        app('UploadersRepository')->addUploaderClasses([
             'image'           => MediaSingleBase64Image::class,
             'upload'          => MediaSingleFile::class,
             'upload_multiple' => MediaMultipleFiles::class,
             'repeatable'      => MediaRepeatable::class,
-        ], 'media');
+        ], 'withMedia');
 
-        CrudField::macro('withMedia', function ($uploadDefinition = []) {
-            $uploadDefinition['uploaders'] = 'media';
-
+        CrudField::macro('withMedia', function ($uploadDefinition = [], $subfield = null) {
             /** @var CrudField|CrudColumn $this */
-            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia');
+            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield);
 
             return $this;
         });
 
-        CrudColumn::macro('withMedia', function ($uploadDefinition = []) {
-            $uploadDefinition['uploaders'] = 'media';
-
+        CrudColumn::macro('withMedia', function ($uploadDefinition = [], $subfield = null) {
             /** @var CrudField|CrudColumn $this */
-            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia');
+            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield);
 
             return $this;
         });
