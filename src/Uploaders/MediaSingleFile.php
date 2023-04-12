@@ -27,7 +27,7 @@ class MediaSingleFile extends MediaUploader
     {
         $values = CRUD::getRequest()->file($this->repeatableContainerName) ?? [];
 
-        $filesToClear = CRUD::getRequest()->get('clear_'.$this->getRepeatableContainerName());
+        $filesToClear = CRUD::getRequest()->get('clear_'.$this->getRepeatableContainerName()) ?? [];
         $orderedFiles = $this->getFileOrderFromRequest();
 
         foreach ($values as $row => $rowValue) {

@@ -5,6 +5,7 @@ namespace Backpack\MediaLibraryUploads;
 use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
 use Backpack\CRUD\app\Library\CrudPanel\CrudField;
 use Backpack\CRUD\app\Library\Uploaders\Support\RegisterUploadEvents;
+use Backpack\MediaLibraryUploads\Uploaders\MediaAjaxUploader;
 use Backpack\MediaLibraryUploads\Uploaders\MediaMultipleFiles;
 use Backpack\MediaLibraryUploads\Uploaders\MediaSingleBase64Image;
 use Backpack\MediaLibraryUploads\Uploaders\MediaSingleFile;
@@ -29,6 +30,7 @@ class AddonServiceProvider extends ServiceProvider
             'image'           => MediaSingleBase64Image::class,
             'upload'          => MediaSingleFile::class,
             'upload_multiple' => MediaMultipleFiles::class,
+            'dropzone'        => MediaAjaxUploader::class,
         ], 'withMedia');
 
         CrudField::macro('withMedia', function ($uploadDefinition = [], $subfield = null) {

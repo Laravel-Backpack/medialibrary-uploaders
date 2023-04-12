@@ -3,8 +3,8 @@
 namespace Backpack\MediaLibraryUploads\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
-use Illuminate\Database\Eloquent\Model;
 use Backpack\CRUD\app\Library\Uploaders\Support\Interfaces\UploaderInterface;
+use Illuminate\Database\Eloquent\Model;
 
 class MediaMultipleFiles extends MediaUploader
 {
@@ -15,14 +15,14 @@ class MediaMultipleFiles extends MediaUploader
 
     public function uploadFiles(Model $entry, $value = null)
     {
-        $filesToDelete = CRUD::getRequest()->get('clear_'.($this->repeatableContainerName ?? $this->getName()));
+        $filesToDelete = CRUD::getRequest()->get('clear_'.($this->repeatableContainerName ?? $this->getName())) ?? [];
 
         $filesToDelete = collect($filesToDelete)->flatten()->toArray();
 
         $value = $value ?? CRUD::getRequest()->file($this->getName());
 
         $previousFiles = $this->get($entry);
-      
+
         if ($filesToDelete) {
             foreach ($previousFiles as $previousFile) {
                 if (in_array($this->getMediaIdentifier($previousFile, $entry), $filesToDelete)) {
@@ -40,7 +40,6 @@ class MediaMultipleFiles extends MediaUploader
 
     public function uploadRepeatableFiles($value, $previousValues, $entry = null)
     {
-       
         $fileOrder = $this->getFileOrderFromRequest();
 
         foreach ($value as $row => $files) {
@@ -48,13 +47,14 @@ class MediaMultipleFiles extends MediaUploader
                 if ($file && is_file($file)) {
                     $this->addMediaFile($entry, $file, $row);
                 }
-            } 
+            }
         }
 
         foreach ($previousValues as $file) {
             $previousFileIdentifier = $this->getMediaIdentifier($file, $entry);
             if (empty($fileOrder)) {
                 $file->delete();
+
                 continue;
             }
 
@@ -72,6 +72,6 @@ class MediaMultipleFiles extends MediaUploader
                     unset($fileOrder[$row]);
                 }
             }
-        } 
+        }
     }
 }

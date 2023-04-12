@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
+use Symfony\Component\HttpFoundation\File\File;
 
 abstract class MediaUploader extends Uploader
 {
@@ -140,7 +141,7 @@ abstract class MediaUploader extends Uploader
     {
         $this->order = $order;
 
-        $fileAdder = is_a($file, UploadedFile::class, true) ? $entry->addMedia($file) : $entry->addMediaFromBase64($file);
+        $fileAdder = $this->initFileAdder($entry, $file);
 
         $fileAdder = $fileAdder->usingName($this->mediaName)
                                 ->withCustomProperties($this->getCustomProperties())
@@ -159,6 +160,76 @@ abstract class MediaUploader extends Uploader
         }
 
         $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->getDisk());
+    }
+
+    protected function getPreviousRepeatableValues(Model $entry)
+    {
+        if ($this->canHandleMultipleFiles()) {
+            return $this->get($entry)
+                        ->groupBy(function ($item) {
+                            return $item->getCustomProperty('repeatableRow');
+                        })
+                        ->transform(function ($media) use ($entry) {
+                            $mediaItems = $media->map(function ($item) use ($entry) {
+                                return $this->getMediaIdentifier($item, $entry);
+                            })
+                            ->toArray();
+
+                            return [$this->getName() => $mediaItems];
+                        })
+                        ->toArray();
+        }
+
+        return $this->get($entry)
+                    ->transform(function ($item) use ($entry) {
+                        return [
+                            $this->getName() => $this->getMediaIdentifier($item, $entry),
+                            'order_column'   => $item->getCustomProperty('repeatableRow'),
+                        ];
+                    })
+                    ->sortBy('order_column')
+                    ->keyBy('order_column')
+                    ->toArray();
+    }
+
+    protected function getPreviousRepeatableMedia(Model $entry)
+    {
+        return array_column($this->get($entry)->transform(function ($item) {
+            return [$this->getName() => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
+        })->sortBy('order_column')->keyBy('order_column')->toArray(), $this->getName());
+    }
+
+    /**************************************************
+     *     Private methods- default implementation    *
+     **************************************************/
+
+    private function getModelInstance($crudObject): Model
+    {
+        return new ($crudObject['baseModel'] ?? get_class(app('crud')->getModel()));
+    }
+
+    private function initFileAdder($entry, $file)
+    {
+        if (is_a($file, UploadedFile::class, true)) {
+            return $entry->addMedia($file);
+        }
+        if (is_a($file, File::class, true)) {
+            return $entry->addMedia($file->getPathName());
+        }
+        if (is_string($file)) {
+            return $entry->addMediaFromBase64($file);
+        }
+    }
+
+    private function getConversionToDisplay($item)
+    {
+        foreach ($this->displayConversions as $displayConversion) {
+            if ($item->hasGeneratedConversion($displayConversion)) {
+                return $displayConversion;
+            }
+        }
+
+        return false;
     }
 
     /*************************
@@ -190,62 +261,5 @@ abstract class MediaUploader extends Uploader
         }
 
         return $path->getPath($media).$media->file_name;
-    }
-
-    /**************************************************
-     *     Private methods- default implementation    *
-     **************************************************/
-
-    private function getModelInstance($crudObject): Model
-    {
-        return new ($crudObject['baseModel'] ?? get_class(app('crud')->getModel()));
-    }
-
-    private function getPreviousRepeatableMedia(Model $entry)
-    {
-        return array_column($this->get($entry)->transform(function ($item) {
-            return [$this->getName() => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
-        })->sortBy('order_column')->keyBy('order_column')->toArray(), $this->getName());
-    }
-
-    private function getConversionToDisplay($item)
-    {
-        foreach ($this->displayConversions as $displayConversion) {
-            if ($item->hasGeneratedConversion($displayConversion)) {
-                return $displayConversion;
-            }
-        }
-
-        return false;
-    }
-
-    private function getPreviousRepeatableValues(Model $entry)
-    {
-        if ($this->canHandleMultipleFiles()) {
-            return $this->get($entry)
-                        ->groupBy(function ($item) {
-                            return $item->getCustomProperty('repeatableRow');
-                        })
-                        ->transform(function ($media) use ($entry) {
-                            $mediaItems = $media->map(function ($item) use ($entry) {
-                                return $this->getMediaIdentifier($item, $entry);
-                            })
-                            ->toArray();
-
-                            return [$this->getName() => $mediaItems];
-                        })
-                        ->toArray();
-        }
-
-        return $this->get($entry)
-                    ->transform(function ($item) use ($entry) {
-                        return [
-                            $this->getName() => $this->getMediaIdentifier($item, $entry),
-                            'order_column'   => $item->getCustomProperty('repeatableRow'),
-                        ];
-                    })
-                    ->sortBy('order_column')
-                    ->keyBy('order_column')
-                    ->toArray();
     }
 }
