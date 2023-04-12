@@ -47,7 +47,7 @@ On any field where you upload a file (eg. `upload`, `upload_multiple`, `image`),
 CRUD::field('avatar')->type('image')->withMedia();
 ```
 
-For repeatable fields you should add `->withMedia()` to the repeatable field (the parent), but also in each subfields that should be handled by Media Library, you should mark that field with `'withMedia' => true`.
+For subfields you should add `->withMedia()` in the subfield definition:
 
 ```php
 CRUD::field('gallery')
@@ -60,8 +60,7 @@ CRUD::field('gallery')
                 'type' => 'image',
                 'withMedia' => true,
             ],
-        ])
-        ->withMedia(); 
+        ]); 
 ```
 
 ## Advanced Use
