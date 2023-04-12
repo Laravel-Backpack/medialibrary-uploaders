@@ -211,32 +211,7 @@ This project was released under MIT, so you can install it on top of any Backpac
 [ico-version]: https://img.shields.io/packagist/v/backpack/media-library-connector.svg?style=flat-square
 [ico-downloads]: https://img.shields.io/packagist/dt/backpack/media-library-connector.svg?style=flat-square
 
-[link-packagist]: https://packagist.org/packages/backpack/media-library-connector
-[link-downloads]: https://packagist.org/packages/backpack/media-library-connector
+[link-packagist]: https://packagist.org/packages/backpack/media-library-uploads
+[link-downloads]: https://packagist.org/packages/backpack/media-library-uploads
 [link-author]: https://github.com/backpack
-[link-contributors]: ../../contributors 
-
-
-# WITHUPLOADS
-
-By default it uses the `public` disk. 
-
-Don't forget to do `php artisan storage:link`.
-
-`withUploads()` accepts configurations like: `disk` and `path`, `fileName` (a closure)
-
-```php
-CRUD::field('avatar')->type('upload')->withUploads([
-    'path' => 'avatars' // will store the file in `{{DISK_DIRECTORY}}/avatars/file.jpg`
-])
-```
-
-To enable the ability to delete files when the entry is deleted, developer should 
-add in their controller `setup()` method:
-
-```php
-// ...
-CRUD::operation('delete', function () {
-    $this->setupCreateOperation(); 
-});
-```
+[link-contributors]: ../../contributors

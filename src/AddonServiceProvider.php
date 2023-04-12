@@ -6,7 +6,6 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudColumn;
 use Backpack\CRUD\app\Library\CrudPanel\CrudField;
 use Backpack\CRUD\app\Library\Uploaders\Support\RegisterUploadEvents;
 use Backpack\MediaLibraryUploads\Uploaders\MediaMultipleFiles;
-use Backpack\MediaLibraryUploads\Uploaders\MediaRepeatable;
 use Backpack\MediaLibraryUploads\Uploaders\MediaSingleBase64Image;
 use Backpack\MediaLibraryUploads\Uploaders\MediaSingleFile;
 use Illuminate\Support\ServiceProvider;
@@ -25,12 +24,11 @@ class AddonServiceProvider extends ServiceProvider
     {
         $this->autoboot();
 
-        //add media uploaders to UploadStore
+        //add media uploaders to UploadersRepository
         app('UploadersRepository')->addUploaderClasses([
             'image'           => MediaSingleBase64Image::class,
             'upload'          => MediaSingleFile::class,
             'upload_multiple' => MediaMultipleFiles::class,
-            'repeatable'      => MediaRepeatable::class,
         ], 'withMedia');
 
         CrudField::macro('withMedia', function ($uploadDefinition = [], $subfield = null) {

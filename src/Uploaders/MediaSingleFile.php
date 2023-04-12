@@ -8,17 +8,6 @@ use Illuminate\Http\UploadedFile;
 
 class MediaSingleFile extends MediaUploader
 {
-    private function getFromRequestAsArray(string $key): array
-    {
-        $items = CRUD::getRequest()->input($key.$this->repeatableContainerName) ?? [];
-
-        array_walk($items, function (&$key, $value) {
-            $key = $key[$this->getName()] ?? null;
-        });
-
-        return $items;
-    }
-
     public function uploadFiles(Model $entry, $value = null)
     {
         $value = $value ?? CRUD::getRequest()->file($this->getName());
@@ -38,7 +27,7 @@ class MediaSingleFile extends MediaUploader
     {
         $values = CRUD::getRequest()->file($this->repeatableContainerName) ?? [];
 
-        $filesToClear = $this->getFromRequestAsArray('_clear_');
+        $filesToClear = CRUD::getRequest()->get('clear_'.$this->getRepeatableContainerName());
         $orderedFiles = $this->getFileOrderFromRequest();
 
         foreach ($values as $row => $rowValue) {
@@ -47,7 +36,7 @@ class MediaSingleFile extends MediaUploader
             }
         }
 
-        foreach ($previousFiles as $previousFile) { 
+        foreach ($previousFiles as $previousFile) {
             $previousFileIdentifier = $this->getMediaIdentifier($previousFile, $entry);
 
             if (in_array($previousFileIdentifier, $filesToClear)) {

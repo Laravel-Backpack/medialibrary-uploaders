@@ -50,62 +50,9 @@ abstract class MediaUploader extends Uploader
         parent::__construct($crudObject, $configuration);
     }
 
-    private function getModelInstance($crudObject): Model
-    {
-        return new ($crudObject['baseModel'] ?? get_class(app('crud')->getModel()));
-    }
-
-    protected function getPreviousRepeatableMedia(Model $entry)
-    {
-        return array_column($this->get($entry)->transform(function ($item) {
-            return [$this->getName() => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
-        })->sortBy('order_column')->keyBy('order_column')->toArray(), $this->getName());
-    }
-
-    public function getPreviousRepeatableValues(Model $entry)
-    {
-        if ($this->canHandleMultipleFiles()) {
-            return $this->get($entry)
-                        ->groupBy(function ($item) {
-                            return $item->getCustomProperty('repeatableRow');
-                        })
-                        ->transform(function ($media) use ($entry) {
-                            $mediaItems = $media->map(function ($item) use ($entry) {
-                                return $this->getMediaIdentifier($item, $entry);
-                            })
-                            ->toArray();
-
-                            return [$this->getName() => $mediaItems];
-                        })
-                        ->toArray();
-        }
-
-        return $this->get($entry)
-                    ->transform(function ($item) use ($entry) {
-                        return [
-                            $this->getName() => $this->getMediaIdentifier($item, $entry),
-                            'order_column'   => $item->getCustomProperty('repeatableRow'),
-                        ];
-                    })
-                    ->sortBy('order_column')
-                    ->keyBy('order_column')
-                    ->toArray();
-    }
-
-    public function get(HasMedia|Model $entry)
-    {
-        $media = $entry->getMedia($this->collection, function ($media) use ($entry) {
-            /** @var Media $media */
-            return $media->getCustomProperty('name') === $this->getName() && $media->getCustomProperty('repeatableContainerName') === $this->repeatableContainerName && $entry->{$entry->getKeyName()} === $media->getAttribute('model_id');
-        });
-
-        if ($this->canHandleMultipleFiles() || $this->handleRepeatableFiles) {
-            return $media;
-        }
-
-        return $media->first();
-    }
-
+    /*************************
+     *     Public methods    *
+     *************************/
     public function storeUploadedFiles(Model $entry): Model
     {
         if ($this->handleRepeatableFiles) {
@@ -129,7 +76,7 @@ abstract class MediaUploader extends Uploader
             $entry->registerAllMediaConversions();
         }
 
-        if($this->handleRepeatableFiles) {
+        if ($this->handleRepeatableFiles) {
             $values = $entry->{$this->getRepeatableContainerName()} ?? [];
 
             if (! is_array($values)) {
@@ -140,7 +87,6 @@ abstract class MediaUploader extends Uploader
                 $uploadValues = $uploader->getPreviousRepeatableValues($entry);
                 $values = $this->mergeValuesRecursive($values, $uploadValues);
             }
-            
 
             $entry->{$this->getRepeatableContainerName()} = $values;
 
@@ -158,6 +104,23 @@ abstract class MediaUploader extends Uploader
         return $entry;
     }
 
+    /*****************************************************
+     *     Protected methods - default implementation    *
+     *****************************************************/
+    protected function get(HasMedia|Model $entry)
+    {
+        $media = $entry->getMedia($this->collection, function ($media) use ($entry) {
+            /** @var Media $media */
+            return $media->getCustomProperty('name') === $this->getName() && $media->getCustomProperty('repeatableContainerName') === $this->repeatableContainerName && $entry->{$entry->getKeyName()} === $media->getAttribute('model_id');
+        });
+
+        if ($this->canHandleMultipleFiles() || $this->handleRepeatableFiles) {
+            return $media;
+        }
+
+        return $media->first();
+    }
+
     protected function processRepeatableUploads(Model $entry, Collection $values): Collection
     {
         foreach (app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()) as $uploader) {
@@ -169,7 +132,7 @@ abstract class MediaUploader extends Uploader
                 return $item;
             });
         }
-       
+
         return $values;
     }
 
@@ -198,6 +161,9 @@ abstract class MediaUploader extends Uploader
         $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->getDisk());
     }
 
+    /*************************
+     *     Helper methods    *
+     *************************/
     public function getCustomProperties()
     {
         return [
@@ -226,6 +192,22 @@ abstract class MediaUploader extends Uploader
         return $path->getPath($media).$media->file_name;
     }
 
+    /**************************************************
+     *     Private methods- default implementation    *
+     **************************************************/
+
+    private function getModelInstance($crudObject): Model
+    {
+        return new ($crudObject['baseModel'] ?? get_class(app('crud')->getModel()));
+    }
+
+    private function getPreviousRepeatableMedia(Model $entry)
+    {
+        return array_column($this->get($entry)->transform(function ($item) {
+            return [$this->getName() => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
+        })->sortBy('order_column')->keyBy('order_column')->toArray(), $this->getName());
+    }
+
     private function getConversionToDisplay($item)
     {
         foreach ($this->displayConversions as $displayConversion) {
@@ -235,5 +217,35 @@ abstract class MediaUploader extends Uploader
         }
 
         return false;
+    }
+
+    private function getPreviousRepeatableValues(Model $entry)
+    {
+        if ($this->canHandleMultipleFiles()) {
+            return $this->get($entry)
+                        ->groupBy(function ($item) {
+                            return $item->getCustomProperty('repeatableRow');
+                        })
+                        ->transform(function ($media) use ($entry) {
+                            $mediaItems = $media->map(function ($item) use ($entry) {
+                                return $this->getMediaIdentifier($item, $entry);
+                            })
+                            ->toArray();
+
+                            return [$this->getName() => $mediaItems];
+                        })
+                        ->toArray();
+        }
+
+        return $this->get($entry)
+                    ->transform(function ($item) use ($entry) {
+                        return [
+                            $this->getName() => $this->getMediaIdentifier($item, $entry),
+                            'order_column'   => $item->getCustomProperty('repeatableRow'),
+                        ];
+                    })
+                    ->sortBy('order_column')
+                    ->keyBy('order_column')
+                    ->toArray();
     }
 }
