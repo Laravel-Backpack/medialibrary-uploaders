@@ -64,6 +64,7 @@ class MediaAjaxUploader extends MediaUploader
             return $value;
         }, $values);
 
+        $sentFiles = [];
         foreach ($values as $row => $files) {
             if (! is_array($files)) {
                 $files = json_decode($files, true) ?? [];
@@ -72,19 +73,20 @@ class MediaAjaxUploader extends MediaUploader
                 return strpos($value, $temporaryFolder) !== false;
             });
 
-            $previousSentFiles = array_filter($files, function ($value) use ($temporaryFolder) {
+            $sentFiles = array_merge($sentFiles, array_filter($files, function ($value) use ($temporaryFolder) {
                 return strpos($value, $temporaryFolder) === false;
-            });
+            }));
 
             foreach ($uploadedFiles ?? [] as $key => $value) {
                 $file = new File(Storage::disk($temporaryDisk)->path($value));
                 $this->addMediaFile($entry, $file, $row);
             }
+        }
 
-            foreach ($previousValues as $previousFile) {
-                if (! in_array($this->getMediaIdentifier($previousFile, $entry), $previousSentFiles)) {
-                    $previousFile->delete();
-                }
+        foreach ($previousValues as $previousFile) {
+            $fileIdentifier = $this->getMediaIdentifier($previousFile, $entry);
+            if (array_search($fileIdentifier, $sentFiles, true) === false) {
+                $previousFile->delete();
             }
         }
     }
