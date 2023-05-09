@@ -17,8 +17,8 @@ class MediaAjaxUploader extends MediaUploader
 
     public function uploadFiles(Model $entry, $value = null)
     {
-        $temporaryDisk = config('backpack.base.temp_disk_name') ?? 'public';
-        $temporaryFolder = config('backpack.base.temp_upload_folder_name') ?? 'backpack/temp/';
+        $temporaryDisk = config('backpack.base.temporary_disk');
+        $temporaryFolder = config('backpack.base.temporary_folder');
 
         $uploads = $value ?? CRUD::getRequest()->input($this->getName());
 

@@ -213,12 +213,15 @@ abstract class MediaUploader extends Uploader
         if (is_a($file, UploadedFile::class, true)) {
             return $entry->addMedia($file);
         }
-        if (is_a($file, File::class, true)) {
-            return $entry->addMedia($file->getPathName());
-        }
+
         if (is_string($file)) {
             return $entry->addMediaFromBase64($file);
         }
+
+        if (get_class($file) === File::class) {
+            return $entry->addMedia($file->getPathName());
+        }
+        
     }
 
     private function getConversionToDisplay($item)
