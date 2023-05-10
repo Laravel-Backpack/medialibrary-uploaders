@@ -4,7 +4,11 @@
 [![Total Downloads][ico-downloads]][link-downloads]
 [![The Whole Fruit Manifesto](https://img.shields.io/badge/writing%20standard-the%20whole%20fruit-brightgreen)](https://github.com/the-whole-fruit/manifesto)
 
-If you project uses both [Spatie Media Library](https://github.com/spatie/laravel-medialibrary) and [Backpack for Laravel](https://backpackforlaravel.com/), this package adds the ability for Backpack fields to easily store uploaded files as media (by using Spatie Media Library). More exactly, it provides some helper classes that will handle the file upload and retrieval. You'll love how simple it makes it to do uploads.
+If you project uses both [Spatie Media Library](https://github.com/spatie/laravel-medialibrary) and [Backpack for Laravel](https://backpackforlaravel.com/), this add-on provides the ability for:
+- Backpack fields to easily store uploaded files as media (by using Spatie Media Library);
+- Backpack columns to easily retrieve uploaded files as media; 
+
+More exactly, it provides the `->withMedia()` helper class, that will handle the file upload and retrieval. You'll love how simple it makes uploads!
 
 ## Requirements
 
@@ -54,11 +58,11 @@ On any field where you upload a file (eg. `upload`, `upload_multiple`, `image`),
 
 ```php
 CRUD::field('avatar')->type('image')->withMedia();
-```
 
-For subfields you should add `->withMedia()` in the subfield definition:
+// you can also do that on columns:
+CRUD::column('avatar')->type('image')->withMedia();
 
-```php
+// and on subfields:
 CRUD::field('gallery')
         ->label('Image Gallery')
         ->type('repeatable')
