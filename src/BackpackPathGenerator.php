@@ -2,6 +2,7 @@
 
 namespace Backpack\MediaLibraryUploads;
 
+use Backpack\CRUD\app\Library\Uploaders\Support\Interfaces\UploaderInterface;
 use Illuminate\Support\Facades\Log;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Illuminate\Support\Str;
@@ -43,9 +44,9 @@ class BackpackPathGenerator implements PathGenerator
      */
     protected function getBasePath(Media $media): string
     {
-        $fieldName = $media->getCustomProperty('name');
+        $uploader = $media->getCustomProperty('uploaderIdentifier');
 
-        $backpackPrefix = $this->uploadersPaths[$fieldName] ?? '';
+        $backpackPrefix = $this->uploadersPaths[$uploader] ?? '';
         $spatiePrefix = config('media-library.prefix', '');
 
         if ($backpackPrefix !== '') {
