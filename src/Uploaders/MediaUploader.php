@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Backpack\MediaLibraryUploads\BackpackPathGenerator;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
 use Symfony\Component\HttpFoundation\File\File;
 
@@ -46,8 +47,7 @@ abstract class MediaUploader extends Uploader
 
         // read https://spatie.be/docs/laravel-medialibrary/v10/advanced-usage/using-a-custom-directory-structure#main
         // on how to customize file directory
-        $crudObject['prefix'] = $configuration['path'] = '';
-
+        $crudObject['prefix'] = '';
         parent::__construct($crudObject, $configuration);
     }
 
@@ -56,6 +56,8 @@ abstract class MediaUploader extends Uploader
      *************************/
     public function storeUploadedFiles(Model $entry): Model
     {
+        app(BackpackPathGenerator::class)->setPath($this->getPath());
+
         if ($this->handleRepeatableFiles) {
             return $this->handleRepeatableFiles($entry);
         }
@@ -65,8 +67,15 @@ abstract class MediaUploader extends Uploader
         return $entry;
     }
 
+    public function deleteUploadedFiles(Model $entry): void
+    {
+        app(BackpackPathGenerator::class)->setPath($this->getPath());
+    }
+
     public function retrieveUploadedFiles(Model $entry): Model
     {
+        app(BackpackPathGenerator::class)->setPath($this->getPath());
+
         $media = $this->get($entry);
 
         if (! $media) {
@@ -221,7 +230,6 @@ abstract class MediaUploader extends Uploader
         if (get_class($file) === File::class) {
             return $entry->addMedia($file->getPathName());
         }
-        
     }
 
     private function getConversionToDisplay($item)

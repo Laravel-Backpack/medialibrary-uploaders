@@ -92,6 +92,27 @@ CRUD::field('main_image')
             'mediaName' => 'custom_media_name' // default: the field name
         ]);
 ```
+### Configure the folder structure
+
+Backpack does not interfer with Spatie process of defining the stucture to save the files. It means the default Spatie strategy of `storage/{$mediaId}/file.png` will be used. 
+
+Most of the time what you would like to do is to add a bit of organization to your folders, for example storing the `avatars` inside an appropriate `storage/avatars/...`, `storage/book_covers/...` etc folders.
+
+To ease that process out, we created `Backpack\MediaLibraryUploads\BackpackPathGenerator::class` that you can use to replace the default `path_generator` class in `config/media-library.php`.
+
+If you didn't published the Spatie config yet, now it's a good time to do it: `php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="config"`
+
+The Backpack path generator strategy it's in essence the same as the default Spatie strategy, but is aware of the `path` property in your uploaders to store and retrieve the files from the correct folders.
+
+```php
+CRUD::field('avatar')
+        ->label('Avatar')
+        ->type('image')
+        ->withMedia([
+            'path' => 'avatars'
+        ]);
+```
+Using the mentioned `BackpackPathGenerator::class` would store your file inside `storage/avatars/1/file.png` instead of the default `storage/1/file.png`. 
 
 ### Customizing the saving process (adding thumbnails, responsive images  etc)
 

@@ -47,4 +47,11 @@ class AddonServiceProvider extends ServiceProvider
             return $this;
         });
     }
+
+    public function register() {
+        $this->autoRegister();
+        $this->app->scoped(BackpackPathGenerator::class, function($app) {
+			return new BackpackPathGenerator();
+		});
+    }
 }
