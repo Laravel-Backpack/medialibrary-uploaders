@@ -2,23 +2,24 @@
 
 namespace Backpack\MediaLibraryUploads;
 
+use Illuminate\Support\Facades\Log;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGenerator;
 
 class BackpackPathGenerator implements PathGenerator
 {
-    private $backpackPath;
+    private $uploadersPaths = [];
 
-    public function setPath($path) {
-        $this->backpackPath = Str::finish($path, '/');
+    public function addUploaderPath($uploader, $path) {
+        $this->uploadersPaths[$uploader] = $path;
     }
     /*
      * Get the path for the given media, relative to the root storage path.
      */
     public function getPath(Media $media): string
     {
-        return $this->backpackPath.$this->getBasePath($media).'/';
+        return $this->getBasePath($media).'/';
     }
 
     /*
@@ -26,7 +27,7 @@ class BackpackPathGenerator implements PathGenerator
      */
     public function getPathForConversions(Media $media): string
     {
-        return $this->backpackPath.$this->getBasePath($media).'/conversions/';
+        return $this->getBasePath($media).'/conversions/';
     }
 
     /*
@@ -34,7 +35,7 @@ class BackpackPathGenerator implements PathGenerator
      */
     public function getPathForResponsiveImages(Media $media): string
     {
-        return $this->backpackPath.$this->getBasePath($media).'/responsive-images/';
+        return $this->getBasePath($media).'/responsive-images/';
     }
 
     /*
@@ -42,12 +43,19 @@ class BackpackPathGenerator implements PathGenerator
      */
     protected function getBasePath(Media $media): string
     {
-        $prefix = config('media-library.prefix', '');
+        $fieldName = $media->getCustomProperty('name');
 
-        if ($prefix !== '') {
-            return $prefix . '/' . $media->getKey();
+        $backpackPrefix = $this->uploadersPaths[$fieldName] ?? '';
+        $spatiePrefix = config('media-library.prefix', '');
+
+        if ($backpackPrefix !== '') {
+            $url = $backpackPrefix.$media->getKey();
         }
 
-        return $media->getKey();
+        if ($spatiePrefix !== '') {
+            $url = $spatiePrefix . '/' . ($url ?? $media->getKey());
+        }
+
+        return $url ?? $media->getKey();
     }
 }

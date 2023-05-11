@@ -56,7 +56,7 @@ abstract class MediaUploader extends Uploader
      *************************/
     public function storeUploadedFiles(Model $entry): Model
     {
-        app(BackpackPathGenerator::class)->setPath($this->getPath());
+        app(BackpackPathGenerator::class)->addUploaderPath($this->getName(), $this->getPath());
 
         if ($this->handleRepeatableFiles) {
             return $this->handleRepeatableFiles($entry);
@@ -69,12 +69,12 @@ abstract class MediaUploader extends Uploader
 
     public function deleteUploadedFiles(Model $entry): void
     {
-        app(BackpackPathGenerator::class)->setPath($this->getPath());
+        app(BackpackPathGenerator::class)->addUploaderPath($this->getName(), $this->getPath());
     }
 
     public function retrieveUploadedFiles(Model $entry): Model
     {
-        app(BackpackPathGenerator::class)->setPath($this->getPath());
+        app(BackpackPathGenerator::class)->addUploaderPath($this->getName(), $this->getPath());
 
         $media = $this->get($entry);
 
