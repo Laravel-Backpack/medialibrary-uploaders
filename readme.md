@@ -1,4 +1,4 @@
-# Media Functionality for Backpack CRUD fields
+# Spatie Media Library Uploaders for Backpack CRUD fields
 
 [![Latest Version on Packagist][ico-version]][link-packagist]
 [![Total Downloads][ico-downloads]][link-downloads]
@@ -8,7 +8,7 @@ If you project uses both [Spatie Media Library](https://github.com/spatie/larave
 - Backpack fields to easily store uploaded files as media (by using Spatie Media Library);
 - Backpack columns to easily retrieve uploaded files as media; 
 
-More exactly, it provides the `->withMedia()` helper class, that will handle the file upload and retrieval. You'll love how simple it makes uploads!
+More exactly, it provides the `->withMedia()` helper, that will handle the file upload and retrieval using [Backpack Uploaders](https://backpackforlaravel.com/docs/{{version}}/crud-uploaders). You'll love how simple it makes uploads!
 
 ## Requirements
 
@@ -40,21 +40,21 @@ Then prepare your Models to use `spatie/laravel-medialibrary`, by adding the `In
 DURING BETA, please add this to your `composer.json`'s `repositories` section, to pull the package directly from Github:
 
 ```json
-"backpack/media-library-uploads": {
+"backpack/medialibrary-uploaders": {
             "type": "vcs",
-            "url": "https://github.com/Laravel-Backpack/media-library-uploads.git"
+            "url": "https://github.com/Laravel-Backpack/medialibrary-uploaders.git"
         }
 ```
 
 Just require this package using Composer, that's it:
 
 ``` bash
-composer require backpack/media-library-uploads
+composer require backpack/medialibrary-uploaders
 ```
 
 ## Usage
 
-On any field where you upload a file (eg. `upload`, `upload_multiple`, `image`), add `withMedia()` to your field definition, in order to tell Backpack to store those uploaded files using Spatie's Laravel MediaLibrary. For example:
+On any field where you upload a file (eg. `upload`, `upload_multiple`, `image` or `dropzone`), add `withMedia()` to your field definition, in order to tell Backpack to store those uploaded files using Spatie's Laravel MediaLibrary. For example:
 
 ```php
 CRUD::field('avatar')->type('image')->withMedia();
@@ -223,7 +223,7 @@ This project was released under MIT, so you can install it on top of any Backpac
 [ico-version]: https://img.shields.io/packagist/v/backpack/media-library-connector.svg?style=flat-square
 [ico-downloads]: https://img.shields.io/packagist/dt/backpack/media-library-connector.svg?style=flat-square
 
-[link-packagist]: https://packagist.org/packages/backpack/media-library-uploads
-[link-downloads]: https://packagist.org/packages/backpack/media-library-uploads
+[link-packagist]: https://packagist.org/packages/backpack/medialibrary-uploaders
+[link-downloads]: https://packagist.org/packages/backpack/medialibrary-uploaders
 [link-author]: https://github.com/backpack
 [link-contributors]: ../../contributors
