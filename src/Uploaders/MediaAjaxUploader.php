@@ -17,23 +17,23 @@ class MediaAjaxUploader extends MediaUploader
 
     public function uploadFiles(Model $entry, $value = null)
     {
-        $temporaryDisk = config('backpack.base.temporary_disk');
-        $temporaryFolder = config('backpack.base.temporary_folder');
-
+        $temporaryDisk = CRUD::get('dropzone.temporary_disk');;
+        $temporaryFolder = CRUD::get('dropzone.temporary_folder');;
+        
         $uploads = $value ?? CRUD::getRequest()->input($this->getName());
 
         if (! is_array($uploads) && is_string($uploads)) {
             $uploads = json_decode($uploads, true) ?? [];
         }
 
-        $uploadedFiles = array_filter($uploads, function ($value) use ($temporaryFolder) {
-            return strpos($value, $temporaryFolder) !== false;
+        $uploadedFiles = array_filter($uploads, function ($value) use ($temporaryFolder, $temporaryDisk) {
+            return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
         });
-
+        
         $previousSentFiles = array_filter($uploads, function ($value) use ($temporaryFolder) {
             return strpos($value, $temporaryFolder) === false;
         });
-
+        
         $previousFiles = $this->get($entry);
 
         foreach ($previousFiles as $previousFile) {
