@@ -33,16 +33,16 @@ class AddonServiceProvider extends ServiceProvider
             'dropzone'        => MediaAjaxUploader::class,
         ], 'withMedia');
 
-        CrudField::macro('withMedia', function ($uploadDefinition = [], $subfield = null) {
+        CrudField::macro('withMedia', function ($uploadDefinition = [], $subfield = null, $isLastInGroup = true) {
             /** @var CrudField|CrudColumn $this */
-            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield);
+            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield, $isLastInGroup);
 
             return $this;
         });
 
-        CrudColumn::macro('withMedia', function ($uploadDefinition = [], $subfield = null) {
+        CrudColumn::macro('withMedia', function ($uploadDefinition = [], $subfield = null, $isLastInGroup = true) {
             /** @var CrudField|CrudColumn $this */
-            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield);
+            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield, $isLastInGroup);
 
             return $this;
         });
