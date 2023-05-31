@@ -19,7 +19,7 @@ class MediaAjaxUploader extends MediaUploader
     {
         $temporaryDisk = CRUD::get('dropzone.temporary_disk');
         $temporaryFolder = CRUD::get('dropzone.temporary_folder');
-        
+
         $uploads = $value ?? CRUD::getRequest()->input($this->getName());
 
         if (! is_array($uploads) && is_string($uploads)) {
@@ -29,11 +29,11 @@ class MediaAjaxUploader extends MediaUploader
         $uploadedFiles = array_filter($uploads, function ($value) use ($temporaryFolder, $temporaryDisk) {
             return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
         });
-        
+
         $previousSentFiles = array_filter($uploads, function ($value) use ($temporaryFolder) {
             return strpos($value, $temporaryFolder) === false;
         });
-        
+
         $previousFiles = $this->get($entry);
 
         foreach ($previousFiles as $previousFile) {
@@ -71,9 +71,9 @@ class MediaAjaxUploader extends MediaUploader
                 return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
             });
 
-            $sentFiles = array_merge($sentFiles, array_filter($files, function ($value) use ($temporaryFolder) {
+            $sentFiles = array_merge($sentFiles, [$row => array_filter($files, function ($value) use ($temporaryFolder) {
                 return strpos($value, $temporaryFolder) === false;
-            }));
+            })]);
 
             foreach ($uploadedFiles ?? [] as $key => $value) {
                 $file = new File(Storage::disk($temporaryDisk)->path($value));
@@ -83,8 +83,28 @@ class MediaAjaxUploader extends MediaUploader
 
         foreach ($previousValues as $previousFile) {
             $fileIdentifier = $this->getMediaIdentifier($previousFile, $entry);
-            if (array_search($fileIdentifier, $sentFiles, true) === false) {
+            if (empty($sentFiles)) {
                 $previousFile->delete();
+                continue;
+            }
+            
+            $foundInSentFiles = false;
+            foreach($sentFiles as $row => $sentFilesInRow) {
+                $fileWasSent = array_search($fileIdentifier, $sentFilesInRow, true);
+                if($fileWasSent !== false) {
+                    $foundInSentFiles = true;
+                    if($row !== $previousFile->getCustomProperty('repeatableRow')) {
+                        $previousFile->setCustomProperty('repeatableRow', $row);
+                        $previousFile->save();
+                        // avoid checking the same file twice. This is a performance improvement.
+                        unset($sentFiles[$row][$fileWasSent]);
+                        break;
+                    }
+                }
+            }
+
+            if ($foundInSentFiles === false) {
+                    $previousFile->delete();
             }
         }
     }
