@@ -1,4 +1,4 @@
-# Spatie Media Library Uploaders for Backpack fields & columns
+# Spatie Media Library Uploaders for Backpack CRUD fields & columns
 
 [![Latest Version on Packagist][ico-version]][link-packagist]
 [![Total Downloads][ico-downloads]][link-downloads]
