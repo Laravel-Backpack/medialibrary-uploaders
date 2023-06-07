@@ -83,9 +83,11 @@ abstract class MediaUploader extends Uploader
             if (! is_array($values)) {
                 $values = json_decode($values, true);
             }
-
-            foreach (app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()) as $uploader) {
+            
+            $repeatableUploaders = array_merge(app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()), [$this]);
+            foreach ($repeatableUploaders as $uploader) {
                 $uploadValues = $uploader->getPreviousRepeatableValues($entry);
+                
                 $values = $this->mergeValuesRecursive($values, $uploadValues);
             }
 
@@ -194,9 +196,15 @@ abstract class MediaUploader extends Uploader
 
     protected function getPreviousRepeatableMedia(Model $entry)
     {
-        return array_column($this->get($entry)->transform(function ($item) {
+        $orderedMedia = [];
+        $previousMedia = $this->get($entry)->transform(function ($item) {
             return [$this->getName() => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
-        })->sortBy('order_column')->keyBy('order_column')->toArray(), $this->getName());
+        });
+        $previousMedia->each(function($item) use (&$orderedMedia) {
+            $orderedMedia[] = $item[$this->getName()];
+        }); 
+
+        return $orderedMedia;
     }
 
     /**************************************************

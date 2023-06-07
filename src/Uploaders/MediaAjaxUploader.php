@@ -17,8 +17,8 @@ class MediaAjaxUploader extends MediaUploader
 
     public function uploadFiles(Model $entry, $value = null)
     {
-        $temporaryDisk = config('backpack.base.temporary_disk');
-        $temporaryFolder = config('backpack.base.temporary_folder');
+        $temporaryDisk = CRUD::get('dropzone.temporary_disk');
+        $temporaryFolder = CRUD::get('dropzone.temporary_folder');
 
         $uploads = $value ?? CRUD::getRequest()->input($this->getName());
 
@@ -26,8 +26,8 @@ class MediaAjaxUploader extends MediaUploader
             $uploads = json_decode($uploads, true) ?? [];
         }
 
-        $uploadedFiles = array_filter($uploads, function ($value) use ($temporaryFolder) {
-            return strpos($value, $temporaryFolder) !== false;
+        $uploadedFiles = array_filter($uploads, function ($value) use ($temporaryFolder, $temporaryDisk) {
+            return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
         });
 
         $previousSentFiles = array_filter($uploads, function ($value) use ($temporaryFolder) {
@@ -51,14 +51,12 @@ class MediaAjaxUploader extends MediaUploader
 
     public function uploadRepeatableFiles($values, $previousValues, $entry = null)
     {
-        $temporaryFolder = config('backpack.base.temp_upload_folder_name') ?? 'backpack/temp/';
-        $temporaryDisk = config('backpack.base.temp_disk_name') ?? 'public';
+        $temporaryDisk = CRUD::get('dropzone.temporary_disk');
+        $temporaryFolder = CRUD::get('dropzone.temporary_folder');
 
         $values = array_map(function ($value) {
             if (! is_array($value)) {
                 $value = json_decode($value, true);
-                // TODO: this array unique should be removed, there is an issue with JS in dropzone.blade.php
-                $value = array_unique($value);
             }
 
             return $value;
@@ -69,13 +67,13 @@ class MediaAjaxUploader extends MediaUploader
             if (! is_array($files)) {
                 $files = json_decode($files, true) ?? [];
             }
-            $uploadedFiles = array_filter($files, function ($value) use ($temporaryFolder) {
-                return strpos($value, $temporaryFolder) !== false;
+            $uploadedFiles = array_filter($files, function ($value) use ($temporaryFolder, $temporaryDisk) {
+                return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
             });
 
-            $sentFiles = array_merge($sentFiles, array_filter($files, function ($value) use ($temporaryFolder) {
+            $sentFiles = array_merge($sentFiles, [$row => array_filter($files, function ($value) use ($temporaryFolder) {
                 return strpos($value, $temporaryFolder) === false;
-            }));
+            })]);
 
             foreach ($uploadedFiles ?? [] as $key => $value) {
                 $file = new File(Storage::disk($temporaryDisk)->path($value));
@@ -85,8 +83,28 @@ class MediaAjaxUploader extends MediaUploader
 
         foreach ($previousValues as $previousFile) {
             $fileIdentifier = $this->getMediaIdentifier($previousFile, $entry);
-            if (array_search($fileIdentifier, $sentFiles, true) === false) {
+            if (empty($sentFiles)) {
                 $previousFile->delete();
+                continue;
+            }
+            
+            $foundInSentFiles = false;
+            foreach($sentFiles as $row => $sentFilesInRow) {
+                $fileWasSent = array_search($fileIdentifier, $sentFilesInRow, true);
+                if($fileWasSent !== false) {
+                    $foundInSentFiles = true;
+                    if($row !== $previousFile->getCustomProperty('repeatableRow')) {
+                        $previousFile->setCustomProperty('repeatableRow', $row);
+                        $previousFile->save();
+                        // avoid checking the same file twice. This is a performance improvement.
+                        unset($sentFiles[$row][$fileWasSent]);
+                        break;
+                    }
+                }
+            }
+
+            if ($foundInSentFiles === false) {
+                    $previousFile->delete();
             }
         }
     }
