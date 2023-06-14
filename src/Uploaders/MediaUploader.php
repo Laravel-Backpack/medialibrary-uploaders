@@ -62,6 +62,13 @@ abstract class MediaUploader extends Uploader
 
         $this->uploadFiles($entry);
 
+        // make sure we remove the attribute from the model in case developer is using it in fillable
+        // or using guarded in their models.
+        $entry->offsetUnset($this->getName());
+        // setting the raw attributes makes sure the `attributeCastCache` property is cleared, preventing
+        // uploaded files from beeing re-added to the entry from the cache.
+        $entry = $entry->setRawAttributes($entry->getAttributes());
+
         return $entry;
     }
 
