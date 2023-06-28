@@ -25,7 +25,7 @@ class AddonServiceProvider extends ServiceProvider
     {
         $this->autoboot();
 
-        //add media uploaders to UploadersRepository
+        // add media uploaders to UploadersRepository.
         app('UploadersRepository')->addUploaderClasses([
             'image'           => MediaSingleBase64Image::class,
             'upload'          => MediaSingleFile::class,
@@ -33,18 +33,23 @@ class AddonServiceProvider extends ServiceProvider
             'dropzone'        => MediaAjaxUploader::class,
         ], 'withMedia');
 
-        CrudField::macro('withMedia', function ($uploadDefinition = [], $subfield = null, $registerEvents = true) {
-            /** @var CrudField|CrudColumn $this */
-            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield, $registerEvents);
+        // register media upload macros on crud fields and columns.
+        if (! CrudField::hasMacro('withMedia')) {
+            CrudField::macro('withMedia', function ($uploadDefinition = [], $subfield = null, $registerEvents = true) {
+                /** @var CrudField $this */
+                RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield, $registerEvents);
 
-            return $this;
-        });
+                return $this;
+            });
+        }
 
-        CrudColumn::macro('withMedia', function ($uploadDefinition = [], $subfield = null, $registerEvents = true) {
-            /** @var CrudField|CrudColumn $this */
-            RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield, $registerEvents);
+        if (! CrudColumn::hasMacro('withMedia')) {
+            CrudColumn::macro('withMedia', function ($uploadDefinition = [], $subfield = null, $registerEvents = true) {
+                /** @var CrudColumn $this */
+                RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield, $registerEvents);
 
-            return $this;
-        });
+                return $this;
+            });
+        }
     }
 }
