@@ -37,15 +37,6 @@ Then prepare your Models to use `spatie/laravel-medialibrary`, by adding the `In
 
 ## Installation
 
-DURING BETA, please add this to your `composer.json`'s `repositories` section, to pull the package directly from Github:
-
-```json
-"backpack/medialibrary-uploaders": {
-            "type": "vcs",
-            "url": "https://github.com/Laravel-Backpack/medialibrary-uploaders.git"
-        }
-```
-
 Just require this package using Composer, that's it:
 
 ``` bash
