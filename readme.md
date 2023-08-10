@@ -211,8 +211,8 @@ If you discover any security related issues, please email hello@backpackforlarav
 This project was released under MIT, so you can install it on top of any Backpack & Laravel project. Please see the [license file](license.md) for more information. 
 
 
-[ico-version]: https://img.shields.io/packagist/v/backpack/media-library-connector.svg?style=flat-square
-[ico-downloads]: https://img.shields.io/packagist/dt/backpack/media-library-connector.svg?style=flat-square
+[ico-version]: https://img.shields.io/packagist/v/backpack/medialibrary-uploaders.svg?style=flat-square
+[ico-downloads]: https://img.shields.io/packagist/dt/backpack/medialibrary-uploaders.svg?style=flat-square
 
 [link-packagist]: https://packagist.org/packages/backpack/medialibrary-uploaders
 [link-downloads]: https://packagist.org/packages/backpack/medialibrary-uploaders
