@@ -20,11 +20,9 @@ class MediaAjaxUploader extends MediaUploader
         $temporaryDisk = CRUD::get('dropzone.temporary_disk');
         $temporaryFolder = CRUD::get('dropzone.temporary_folder');
 
-        $uploads = $value ?? CRUD::getRequest()->input($this->getName());
+        $uploads = $value ?? CRUD::getRequest()->input($this->getName()) ?? [];
 
-        if (! is_array($uploads) && is_string($uploads)) {
-            $uploads = json_decode($uploads, true) ?? [];
-        }
+        $uploads = is_array($uploads) ? $uploads : (json_decode($uploads, true) ?? []);
 
         $uploadedFiles = array_filter($uploads, function ($value) use ($temporaryFolder, $temporaryDisk) {
             return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
