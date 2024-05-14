@@ -12,7 +12,7 @@ More exactly, it provides the `->withMedia()` helper, that will handle the file 
 
 ## Requirements
 
-**Install and use `spatie/laravel-medialibrary` v11**. If you haven't already, please make sure you've installed `spatie/laravel-medialibrary` and followed all installation steps in [their docs](https://spatie.be/docs/laravel-medialibrary/v10/installation-setup):
+**Install and use `spatie/laravel-medialibrary` v11**. If you haven't already, please make sure you've installed `spatie/laravel-medialibrary` and followed all installation steps in [their docs](https://spatie.be/docs/laravel-medialibrary/v11/installation-setup):
 
 ``` bash
 # require the package
