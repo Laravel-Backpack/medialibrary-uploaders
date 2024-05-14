@@ -20,7 +20,7 @@ composer require "spatie/laravel-medialibrary:^11.0.0"
 
 # prepare the database
 # NOTE: Spatie migration does not come with a `down()` method by default, add one now if you need it
-php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="migrations"
+php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="medialibrary-migrations"
 
 # run the migration
 php artisan migrate
@@ -33,7 +33,7 @@ php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServicePr
 
 ```
 
-Then prepare your Models to use `spatie/laravel-medialibrary`, by adding the `InteractsWithMedia` trait to your model and implement the `HasMedia` interface like explained on [Media Library Documentation](https://spatie.be/docs/laravel-medialibrary/v10/basic-usage/preparing-your-model).
+Then prepare your Models to use `spatie/laravel-medialibrary`, by adding the `InteractsWithMedia` trait to your model and implement the `HasMedia` interface like explained on [Media Library Documentation](https://spatie.be/docs/laravel-medialibrary/v11/basic-usage/preparing-your-model).
 
 ## Installation
 
