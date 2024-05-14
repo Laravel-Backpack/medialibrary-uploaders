@@ -16,7 +16,7 @@ More exactly, it provides the `->withMedia()` helper, that will handle the file 
 
 ``` bash
 # require the package
-composer require "spatie/laravel-medialibrary:^10.0.0"
+composer require "spatie/laravel-medialibrary:^11.0.0"
 
 # prepare the database
 # NOTE: Spatie migration does not come with a `down()` method by default, add one now if you need it
