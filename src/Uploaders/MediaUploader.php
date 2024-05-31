@@ -90,11 +90,11 @@ abstract class MediaUploader extends Uploader
             if (! is_array($values)) {
                 $values = json_decode($values, true);
             }
-            
+
             $repeatableUploaders = array_merge(app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()), [$this]);
             foreach ($repeatableUploaders as $uploader) {
                 $uploadValues = $uploader->getPreviousRepeatableValues($entry);
-                
+
                 $values = $this->mergeValuesRecursive($values, $uploadValues);
             }
 
@@ -131,7 +131,7 @@ abstract class MediaUploader extends Uploader
         return $media->first();
     }
 
-    protected function processRepeatableUploads(Model $entry, Collection $values): Collection
+    protected function processRepeatableUploads(Model $entry, Collection $values): array
     {
         foreach (app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()) as $uploader) {
             $uploader->uploadRepeatableFiles($values->pluck($uploader->getName())->toArray(), $uploader->getPreviousRepeatableMedia($entry), $entry);
@@ -140,7 +140,7 @@ abstract class MediaUploader extends Uploader
                 unset($item[$uploader->getName()]);
 
                 return $item;
-            });
+            })->toArray();
         }
 
         return $values;
@@ -207,9 +207,9 @@ abstract class MediaUploader extends Uploader
         $previousMedia = $this->get($entry)->transform(function ($item) {
             return [$this->getName() => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
         });
-        $previousMedia->each(function($item) use (&$orderedMedia) {
+        $previousMedia->each(function ($item) use (&$orderedMedia) {
             $orderedMedia[] = $item[$this->getName()];
-        }); 
+        });
 
         return $orderedMedia;
     }
@@ -236,7 +236,6 @@ abstract class MediaUploader extends Uploader
         if (get_class($file) === File::class) {
             return $entry->addMedia($file->getPathName());
         }
-        
     }
 
     private function getConversionToDisplay($item)
