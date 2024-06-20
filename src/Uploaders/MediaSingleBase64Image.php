@@ -12,7 +12,7 @@ class MediaSingleBase64Image extends MediaUploader
     {
         $value = $value ?? CrudPanelFacade::getRequest()->get($this->getName());
 
-        $previousImage = $this->get($entry);
+        $previousImage = $this->getPreviousFiles($entry);
 
         if (! $value && $previousImage) {
             $previousImage->delete();

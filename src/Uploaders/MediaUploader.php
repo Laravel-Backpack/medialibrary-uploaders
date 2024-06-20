@@ -3,18 +3,18 @@
 namespace Backpack\MediaLibraryUploaders\Uploaders;
 
 use Backpack\CRUD\app\Library\Uploaders\Uploader;
-use Backpack\MediaLibraryUploaders\ConstrainedFileAdder;
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
 use Symfony\Component\HttpFoundation\File\File;
 
 abstract class MediaUploader extends Uploader
 {
+    use Traits\IdentifiesMedia;
+    use Traits\AddMediaToModels;
+
     public $mediaName;
 
     public $collection;
@@ -40,11 +40,11 @@ abstract class MediaUploader extends Uploader
                             })
                             ->first();
 
-        $configuration['disk'] = $modelDefinition?->diskName ?? null;
+        $configuration['disk'] ??= $modelDefinition?->diskName ?? null;
 
-        $configuration['disk'] = empty($configuration['disk']) ? $crudObject['disk'] ?? config('media-library.disk_name') : null;
-
-        // read https://spatie.be/docs/laravel-medialibrary/v10/advanced-usage/using-a-custom-directory-structure#main
+        $configuration['disk'] = empty($configuration['disk']) ? ($crudObject['disk'] ?? config('media-library.disk_name')) : $configuration['disk'];
+        //dd($configuration['disk'], $crudObject);
+        // read https://spatie.be/docs/laravel-medialibrary/v11/advanced-usage/using-a-custom-directory-structure#main
         // on how to customize file directory
         $crudObject['prefix'] = $configuration['path'] = '';
 
@@ -66,15 +66,15 @@ abstract class MediaUploader extends Uploader
         // or using guarded in their models.
         $entry->offsetUnset($this->getName());
         // setting the raw attributes makes sure the `attributeCastCache` property is cleared, preventing
-        // uploaded files from beeing re-added to the entry from the cache.
+        // uploaded files from being re-added to the entry from the cache.
         $entry = $entry->setRawAttributes($entry->getAttributes());
 
         return $entry;
     }
 
     public function retrieveUploadedFiles(Model $entry): Model
-    {
-        $media = $this->get($entry);
+    { 
+        $media = $this->getPreviousFiles($entry);
 
         if (! $media) {
             return $entry;
@@ -131,6 +131,22 @@ abstract class MediaUploader extends Uploader
         return $media->first();
     }
 
+    public function getPreviousFiles(Model $entry): mixed
+    {
+        $media = $entry->getMedia($this->collection, function ($media) use ($entry) {
+            /** @var Media $media */
+            return $media->getCustomProperty('name') === $this->getName() && 
+                    $media->getCustomProperty('repeatableContainerName') === $this->repeatableContainerName && 
+                    $entry->{$entry->getKeyName()} === $media->getAttribute('model_id');
+        });
+
+        if ($this->canHandleMultipleFiles() || $this->handleRepeatableFiles) {
+            return $media;
+        }
+       
+        return $media->first();
+    }
+
     protected function processRepeatableUploads(Model $entry, Collection $values): array
     {
         foreach (app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()) as $uploader) {
@@ -140,35 +156,10 @@ abstract class MediaUploader extends Uploader
                 unset($item[$uploader->getName()]);
 
                 return $item;
-            })->toArray();
+            });
         }
 
-        return $values;
-    }
-
-    protected function addMediaFile($entry, $file, $order = null)
-    {
-        $this->order = $order;
-
-        $fileAdder = $this->initFileAdder($entry, $file);
-
-        $fileAdder = $fileAdder->usingName($this->mediaName)
-                                ->withCustomProperties($this->getCustomProperties())
-                                ->usingFileName($this->getFileName($file));
-
-        $constrainedMedia = new ConstrainedFileAdder();
-        $constrainedMedia->setFileAdder($fileAdder);
-        $constrainedMedia->setMediaUploader($this);
-
-        if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-            $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
-        }
-
-        if (! $constrainedMedia) {
-            throw new Exception('Please return a valid class from `whenSaving` closure. Field: '.$this->getName());
-        }
-
-        $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->getDisk());
+        return $values->toArray();
     }
 
     protected function getPreviousRepeatableValues(Model $entry)
@@ -259,24 +250,5 @@ abstract class MediaUploader extends Uploader
             'repeatableContainerName' => $this->repeatableContainerName,
             'repeatableRow'           => $this->order,
         ];
-    }
-
-    public function getMediaIdentifier($media, $entry = null)
-    {
-        $path = PathGeneratorFactory::create($media);
-
-        if ($entry && ! empty($entry->mediaConversions)) {
-            $conversion = array_values(array_filter($entry->mediaConversions, function ($item) use ($media) {
-                return $item->getName() === $this->getConversionToDisplay($media);
-            }))[0] ?? null;
-
-            if (! $conversion) {
-                return $path->getPath($media).$media->file_name;
-            }
-
-            return $path->getPathForConversions($media).$conversion->getConversionFile($media);
-        }
-
-        return $path->getPath($media).$media->file_name;
     }
 }
