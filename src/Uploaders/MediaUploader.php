@@ -161,7 +161,7 @@ abstract class MediaUploader extends Uploader
         $constrainedMedia->setMediaUploader($this);
 
         if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-            $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this,$entry]);
+            $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this, $entry]);
         }
 
         if (! $constrainedMedia) {
