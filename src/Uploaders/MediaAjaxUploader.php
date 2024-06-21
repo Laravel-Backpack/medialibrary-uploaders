@@ -11,6 +11,19 @@ class MediaAjaxUploader extends BackpackAjaxUploader
 {
     use Traits\IdentifiesMedia;
     use Traits\AddMediaToModels;
+    use Traits\HasConstrainedFileAdder;
+    use Traits\HasMediaName;
+    use Traits\HasCustomProperties;
+    use Traits\HasSavingCallback;
+    use Traits\HasCollections;
+
+    public function __construct(array $crudObject, array $configuration)
+    {
+        parent::__construct($crudObject, $configuration);
+        $this->mediaName = $configuration['mediaName'] ?? $crudObject['name'];
+        $this->savingEventCallback = $configuration['whenSaving'] ?? null;
+        $this->collection = $configuration['collection'] ?? 'default';
+    }
 
     public function uploadRepeatableFiles($values, $previousValues, $entry = null)
     {
