@@ -4,26 +4,23 @@ namespace Backpack\MediaLibraryUploaders\Uploaders;
 
 use Backpack\CRUD\app\Library\Uploaders\Uploader;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Symfony\Component\HttpFoundation\File\File;
 
 abstract class MediaUploader extends Uploader
 {
     use Traits\IdentifiesMedia;
     use Traits\AddMediaToModels;
-
-    public $mediaName;
-
-    public $collection;
+    use Traits\HasConstrainedFileAdder;
+    use Traits\HasMediaName;
+    use Traits\HasCustomProperties;
+    use Traits\HasSavingCallback;
+    use Traits\HasCollections;
 
     public $displayConversions;
 
     public $order;
-
-    public $savingEventCallback = null;
 
     public function __construct(array $crudObject, array $configuration)
     {
@@ -110,7 +107,7 @@ abstract class MediaUploader extends Uploader
                 return $this->getMediaIdentifier($item, $entry);
             })->toArray();
         }
-
+        dd($entry);
         return $entry;
     }
 
@@ -214,21 +211,6 @@ abstract class MediaUploader extends Uploader
         return new ($crudObject['baseModel'] ?? get_class(app('crud')->getModel()));
     }
 
-    private function initFileAdder($entry, $file)
-    {
-        if (is_a($file, UploadedFile::class, true)) {
-            return $entry->addMedia($file);
-        }
-
-        if (is_string($file)) {
-            return $entry->addMediaFromBase64($file);
-        }
-
-        if (get_class($file) === File::class) {
-            return $entry->addMedia($file->getPathName());
-        }
-    }
-
     private function getConversionToDisplay($item)
     {
         foreach ($this->displayConversions as $displayConversion) {
@@ -243,12 +225,5 @@ abstract class MediaUploader extends Uploader
     /*************************
      *     Helper methods    *
      *************************/
-    public function getCustomProperties()
-    {
-        return [
-            'name'                    => $this->getName(),
-            'repeatableContainerName' => $this->repeatableContainerName,
-            'repeatableRow'           => $this->order,
-        ];
-    }
+    
 }
