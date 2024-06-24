@@ -17,6 +17,7 @@ abstract class MediaUploader extends Uploader
     use Traits\HasCustomProperties;
     use Traits\HasSavingCallback;
     use Traits\HasCollections;
+    use Traits\RetrievesUploadedFiles;
 
     public $displayConversions;
 
@@ -40,7 +41,7 @@ abstract class MediaUploader extends Uploader
         $configuration['disk'] ??= $modelDefinition?->diskName ?? null;
 
         $configuration['disk'] = empty($configuration['disk']) ? ($crudObject['disk'] ?? config('media-library.disk_name')) : $configuration['disk'];
-        //dd($configuration['disk'], $crudObject);
+
         // read https://spatie.be/docs/laravel-medialibrary/v11/advanced-usage/using-a-custom-directory-structure#main
         // on how to customize file directory
         $crudObject['prefix'] = $configuration['path'] = '';
@@ -69,51 +70,7 @@ abstract class MediaUploader extends Uploader
         return $entry;
     }
 
-    public function retrieveUploadedFiles(Model $entry): Model
-    { 
-        $media = $this->getPreviousFiles($entry);
-
-        if (! $media) {
-            return $entry;
-        }
-
-        if (empty($entry->mediaConversions)) {
-            $entry->registerAllMediaConversions();
-        }
-
-        if ($this->handleRepeatableFiles) {
-            $values = $entry->{$this->getRepeatableContainerName()} ?? [];
-
-            if (! is_array($values)) {
-                $values = json_decode($values, true);
-            }
-
-            $repeatableUploaders = array_merge(app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()), [$this]);
-            foreach ($repeatableUploaders as $uploader) {
-                $uploadValues = $uploader->getPreviousRepeatableValues($entry);
-
-                $values = $this->mergeValuesRecursive($values, $uploadValues);
-            }
-
-            $entry->{$this->getRepeatableContainerName()} = $values;
-
-            return $entry;
-        }
-
-        if (is_a($media, 'Spatie\MediaLibrary\MediaCollections\Models\Media')) {
-            $entry->{$this->getName()} = $this->getMediaIdentifier($media, $entry);
-        } else {
-            $entry->{$this->getName()} = $media->map(function ($item) use ($entry) {
-                return $this->getMediaIdentifier($item, $entry);
-            })->toArray();
-        }
-        dd($entry);
-        return $entry;
-    }
-
-    /*****************************************************
-     *     Protected methods - default implementation    *
-     *****************************************************/
+    /** @deprecated - use getPreviousFiles() */
     protected function get(HasMedia|Model $entry)
     {
         $media = $entry->getMedia($this->collection, function ($media) use ($entry) {
@@ -128,79 +85,7 @@ abstract class MediaUploader extends Uploader
         return $media->first();
     }
 
-    public function getPreviousFiles(Model $entry): mixed
-    {
-        $media = $entry->getMedia($this->collection, function ($media) use ($entry) {
-            /** @var Media $media */
-            return $media->getCustomProperty('name') === $this->getName() && 
-                    $media->getCustomProperty('repeatableContainerName') === $this->repeatableContainerName && 
-                    $entry->{$entry->getKeyName()} === $media->getAttribute('model_id');
-        });
-
-        if ($this->canHandleMultipleFiles() || $this->handleRepeatableFiles) {
-            return $media;
-        }
-       
-        return $media->first();
-    }
-
-    protected function processRepeatableUploads(Model $entry, Collection $values): array
-    {
-        foreach (app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()) as $uploader) {
-            $uploader->uploadRepeatableFiles($values->pluck($uploader->getName())->toArray(), $uploader->getPreviousRepeatableMedia($entry), $entry);
-
-            $values->transform(function ($item) use ($uploader) {
-                unset($item[$uploader->getName()]);
-
-                return $item;
-            });
-        }
-
-        return $values->toArray();
-    }
-
-    protected function getPreviousRepeatableValues(Model $entry)
-    {
-        if ($this->canHandleMultipleFiles()) {
-            return $this->get($entry)
-                        ->groupBy(function ($item) {
-                            return $item->getCustomProperty('repeatableRow');
-                        })
-                        ->transform(function ($media) use ($entry) {
-                            $mediaItems = $media->map(function ($item) use ($entry) {
-                                return $this->getMediaIdentifier($item, $entry);
-                            })
-                            ->toArray();
-
-                            return [$this->getName() => $mediaItems];
-                        })
-                        ->toArray();
-        }
-
-        return $this->get($entry)
-                    ->transform(function ($item) use ($entry) {
-                        return [
-                            $this->getName() => $this->getMediaIdentifier($item, $entry),
-                            'order_column'   => $item->getCustomProperty('repeatableRow'),
-                        ];
-                    })
-                    ->sortBy('order_column')
-                    ->keyBy('order_column')
-                    ->toArray();
-    }
-
-    protected function getPreviousRepeatableMedia(Model $entry)
-    {
-        $orderedMedia = [];
-        $previousMedia = $this->get($entry)->transform(function ($item) {
-            return [$this->getName() => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
-        });
-        $previousMedia->each(function ($item) use (&$orderedMedia) {
-            $orderedMedia[] = $item[$this->getName()];
-        });
-
-        return $orderedMedia;
-    }
+    
 
     /**************************************************
      *     Private methods- default implementation    *
@@ -225,5 +110,4 @@ abstract class MediaUploader extends Uploader
     /*************************
      *     Helper methods    *
      *************************/
-    
 }
