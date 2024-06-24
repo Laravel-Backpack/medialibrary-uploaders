@@ -2,137 +2,62 @@
 
 namespace Backpack\MediaLibraryUploaders\Uploaders;
 
-use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
-use Backpack\CRUD\app\Library\Uploaders\Support\Interfaces\UploaderInterface;
+use Backpack\CRUD\app\Library\Validation\Rules\BackpackCustomRule;
+use Backpack\Pro\Uploads\Validation\ValidEasyMDE;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Prologue\Alerts\Facades\Alert;
-use Symfony\Component\HttpFoundation\File\File;
+use Illuminate\Support\Facades\Storage;
 
 class MediaEasyMDEUploader extends MediaAjaxUploader
 {
-    public static function for(array $field, $configuration): UploaderInterface
-    {
-        return (new self($field, $configuration))->multiple();
-    }
 
     public function uploadFiles(Model $entry, $value = null)
     {
-        $uploads = $value ?? CRUD::getRequest()->input($this->getName()) ?? [];
-
-        $uploads = is_array($uploads) ? $uploads : (json_decode($uploads, true) ?? []);
-
-        $uploadedFiles = array_filter($uploads, function ($value) {
-            return strpos($value, $this->temporaryFolder) !== false;
-        });
-
-        $previousSentFiles = array_filter($uploads, function ($value) {
-            return strpos($value, $this->temporaryFolder) === false;
-        });
-
-        $previousDatabaseFiles = $this->getPreviousFiles($entry) ?? [];
-
-        foreach ($previousDatabaseFiles as $previousFile) {
-            if (! in_array($this->getMediaIdentifier($previousFile, $entry), $previousSentFiles)) {
-                $previousFile->delete();
-            }
-        }
-
-        foreach ($uploadedFiles as $key => $value) {
-            $file = new File($this->temporaryDisk->path($value));
-
-            $this->addMediaFile($entry, $file);
-        }
-    }
-
-    public function uploadRepeatableFiles($values, $previousValues, $entry = null)
-    {
-        $values = array_map(function ($value) {
-            return is_array($value) ? $value : (json_decode($value, true) ?? []);
-        }, $values);
-
-        foreach ($values as $row => $files) {
-            $files = is_array($files) ? $files : (json_decode($files, true) ?? []);
-
-            $uploadedFiles = array_filter($files, function ($value) {
-                return strpos($value, $this->temporaryFolder) !== false;
-            });
-
-            foreach ($uploadedFiles ?? [] as $key => $file) {
-                try {
-                    $name = substr($file, strrpos($file, '/') + 1);
-
-                    $temporaryFile = $this->temporaryDisk->get($file);
-
-                    $this->permanentDisk->put($this->getPath().$name, $temporaryFile);
-
-                    $this->temporaryDisk->delete($file);
-
-                    $file = str_replace(Str::finish($this->temporaryFolder, '/'), $this->getPath(), $file);
-
-                    $values[$row][$key] = $file;
-                } catch (\Throwable $th) {
-                    Log::error($th->getMessage());
-                    Alert::error('An error occurred uploading files. Check log files.')->flash();
-                }
-            }
-        }
-
-        $previousValuesArray = Arr::flatten(Arr::map($previousValues, function ($value) {
-            return ! is_array($value) ? json_decode($value, true) ?? [] : $value;
-        }));
-
-        $currentValuesArray = Arr::flatten(Arr::map($values, function ($value) {
-            return ! is_array($value) ? json_decode($value, true) ?? [] : $value;
-        }));
-
-        $filesToDelete = array_diff($previousValuesArray, $currentValuesArray);
-
-        foreach ($filesToDelete as $key => $value) {
-            $this->permanentDisk->delete($this->getPath().$value);
-        }
-
-        foreach ($values as $row => $value) {
-            if (empty($value)) {
-                unset($values[$row]);
-            }
-        }
-
-        return $values;
+        // nothing to do here. The files are uploaded via the EasyMDE editor using the ajax endpoint.
+        return $this->isFake() ? ($entry->{$this->getFakeAttribute()}[$this->getAttributeName()]  ?? null) : $entry->{$this->getAttributeName()};
+        
     }
 
     protected function ajaxEndpointSuccessResponse($files = null): \Illuminate\Http\JsonResponse
     {
-        return $files ?
-            response()->json(['files'   => $files, 'success' => true]) :
-            response()->json(['success' => true]);
-    }
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk($this->getDisk());
 
-    protected function ajaxEndpointErrorMessage(string $message = 'An error occurred while processing the file.'): \Illuminate\Http\JsonResponse
-    {
+        $file = current($files);
+
         return response()->json([
-            'message'   => $message,
-            'success'   => false,
-        ], 400);
+            'data' => ['filePath' => $disk->url($file)],
+        ]);
     }
 
-    protected function buildAjaxEndpointValidationFilesArray($validationKey, $uploadedFiles, $requestInputName): array
+    protected function getDefaultAjaxEndpointValidation(): BackpackCustomRule
     {
-        $previousUploadedFiles = json_decode(CRUD::getRequest()->input('previousUploadedFiles'), true) ?? [];
+        return ValidEasyMDE::field([])->file(['mimetypes:image/jpeg,image/png,image/jpg', 'max:1024']);
+    }
+    
+    public function uploadRepeatableFiles($values, $previousValues, $entry = null)
+    {
+        // nothing to do here. The files are uploaded via ajax
+        return $values;
+    }
 
-        if (Str::contains($validationKey, '.*.')) {
-            return [
-                'validate_ajax_endpoint'          => true,
-                Str::before($validationKey, '.*') => [
-                    0 => [
-                        Str::after($validationKey, '*.') => array_merge($uploadedFiles[$requestInputName], $previousUploadedFiles),
-                    ],
-                ],
-            ];
-        }
+    protected function getAjaxEndpointDisk(): \Illuminate\Filesystem\FilesystemAdapter
+    {
+        return $this->getPermanentDisk();
+    }
 
-        return array_merge($uploadedFiles[$requestInputName], $previousUploadedFiles, ['validate_ajax_endpoint' => true]);
+    protected function getAjaxEndpointPath(): string
+    {
+        return $this->getPath();
+    }
+
+    public function getValueWithoutPath(?string $value = null): ?string
+    {
+        // don't strip the paths on easyMDE uploads
+        return $value;
+    }
+
+    public function shouldDeleteFiles(): bool
+    {
+        return false;
     }
 }
