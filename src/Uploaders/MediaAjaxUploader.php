@@ -12,7 +12,6 @@ class MediaAjaxUploader extends BackpackAjaxUploader
     use Traits\IdentifiesMedia;
     use Traits\AddMediaToModels;
     use Traits\HasConstrainedFileAdder;
-    use Traits\HasMediaName;
     use Traits\HasCustomProperties;
     use Traits\HasSavingCallback;
     use Traits\HasCollections;
