@@ -16,6 +16,7 @@ class MediaAjaxUploader extends BackpackAjaxUploader
     use Traits\HasSavingCallback;
     use Traits\HasCollections;
     use Traits\RetrievesUploadedFiles;
+    use Traits\HandleRepeatableUploads;
 
     public function __construct(array $crudObject, array $configuration)
     {
