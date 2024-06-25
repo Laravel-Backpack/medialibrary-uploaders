@@ -9,6 +9,7 @@ return new class() extends Migration {
     {
         Schema::create('media_uploaders', function (Blueprint $table) {
             $table->id();
+            $table->json('repeatable')->nullable();
         });
     }
 

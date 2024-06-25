@@ -84,8 +84,4 @@ abstract class MediaUploader extends Uploader
 
         return false;
     }
-
-    /*************************
-     *     Helper methods    *
-     *************************/
 }
