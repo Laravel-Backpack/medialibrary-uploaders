@@ -4,7 +4,6 @@ namespace Backpack\MediaLibraryUploaders\Uploaders;
 
 use Backpack\CRUD\app\Library\Uploaders\Uploader;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
@@ -17,6 +16,7 @@ abstract class MediaUploader extends Uploader
     use Traits\HasSavingCallback;
     use Traits\HasCollections;
     use Traits\RetrievesUploadedFiles;
+    use Traits\HandleRepeatableUploads;
 
     public $displayConversions;
 
