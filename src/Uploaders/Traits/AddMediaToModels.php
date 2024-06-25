@@ -3,6 +3,7 @@
 namespace Backpack\MediaLibraryUploaders\Uploaders\Traits;
 
 use Backpack\MediaLibraryUploaders\ConstrainedFileAdder;
+use Illuminate\Database\Eloquent\Model;
 use Exception;
 
 trait AddMediaToModels
@@ -30,5 +31,23 @@ trait AddMediaToModels
         }
 
         $constrainedMedia->getFileAdder()->toMediaCollection($this->collection, $this->getDisk());
+    }
+
+    public function storeUploadedFiles(Model $entry): Model
+    {
+        if ($this->handleRepeatableFiles) {
+            return $this->handleRepeatableFiles($entry);
+        }
+
+        $this->uploadFiles($entry);
+
+        // make sure we remove the attribute from the model in case developer is using it in fillable
+        // or using guarded in their models.
+        $entry->offsetUnset($this->getName());
+        // setting the raw attributes makes sure the `attributeCastCache` property is cleared, preventing
+        // uploaded files from being re-added to the entry from the cache.
+        $entry = $entry->setRawAttributes($entry->getAttributes());
+
+        return $entry;
     }
 }
