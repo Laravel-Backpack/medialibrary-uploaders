@@ -12,7 +12,7 @@ class MediaSingleFile extends MediaUploader
     {
         $value = $value ?? CRUD::getRequest()->file($this->getName());
 
-        $previousFile = $this->get($entry);
+        $previousFile = $this->getPreviousFiles($entry);
 
         if ($previousFile && ($value && is_a($value, UploadedFile::class) || request()->has($this->getName()))) {
             $previousFile->delete();

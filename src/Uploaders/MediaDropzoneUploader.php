@@ -52,12 +52,18 @@ class MediaDropzoneUploader extends MediaAjaxUploader
             return is_array($value) ? $value : (json_decode($value, true) ?? []);
         }, $values);
 
+        $sentFiles = [];
+
         foreach ($values as $row => $files) {
             $files = is_array($files) ? $files : (json_decode($files, true) ?? []);
 
             $uploadedFiles = array_filter($files, function ($value) {
                 return strpos($value, $this->temporaryFolder) !== false;
             });
+
+            $sentFiles = array_merge($sentFiles, [$row => array_filter($files, function ($value) {
+                return strpos($value, $this->temporaryFolder) === false;
+            })]);
 
             foreach ($uploadedFiles ?? [] as $key => $file) {
                 try {
