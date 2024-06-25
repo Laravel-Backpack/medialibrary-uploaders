@@ -16,7 +16,11 @@ class MediaUploader extends Model implements HasMedia
      *
      * @var array
      */
-    protected $fillable = ['name'];
+    protected $fillable = ['repeatable'];
 
     public $timestamps = false;
+
+    protected $casts = [
+        'repeatable' => 'json',
+    ];
 }
