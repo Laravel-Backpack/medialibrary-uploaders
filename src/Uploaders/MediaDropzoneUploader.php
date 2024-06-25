@@ -42,7 +42,6 @@ class MediaDropzoneUploader extends MediaAjaxUploader
 
         foreach ($uploadedFiles as $key => $value) {
             $file = new UploadedFile($this->temporaryDisk->path($value), $value);
-
             $this->addMediaFile($entry, $file);
         }
     }
@@ -62,17 +61,8 @@ class MediaDropzoneUploader extends MediaAjaxUploader
 
             foreach ($uploadedFiles ?? [] as $key => $file) {
                 try {
-                    $name = substr($file, strrpos($file, '/') + 1);
-
-                    $temporaryFile = $this->temporaryDisk->get($file);
-
-                    $this->permanentDisk->put($this->getPath().$name, $temporaryFile);
-
-                    $this->temporaryDisk->delete($file);
-
-                    $file = str_replace(Str::finish($this->temporaryFolder, '/'), $this->getPath(), $file);
-
-                    $values[$row][$key] = $file;
+                    $file = new UploadedFile($this->temporaryDisk->path($file), $file);
+                    $this->addMediaFile($entry, $file, $row);
                 } catch (\Throwable $th) {
                     Log::error($th->getMessage());
                     Alert::error('An error occurred uploading files. Check log files.')->flash();
@@ -80,27 +70,32 @@ class MediaDropzoneUploader extends MediaAjaxUploader
             }
         }
 
-        $previousValuesArray = Arr::flatten(Arr::map($previousValues, function ($value) {
-            return ! is_array($value) ? json_decode($value, true) ?? [] : $value;
-        }));
+        foreach ($previousValues as $previousFile) {
+            $fileIdentifier = $this->getMediaIdentifier($previousFile, $entry);
+            if (empty($sentFiles)) {
+                $previousFile->delete();
+                continue;
+            }
+            
+            $foundInSentFiles = false;
+            foreach($sentFiles as $row => $sentFilesInRow) {
+                $fileWasSent = array_search($fileIdentifier, $sentFilesInRow, true);
+                if($fileWasSent !== false) {
+                    $foundInSentFiles = true;
+                    if($row !== $previousFile->getCustomProperty('repeatableRow')) {
+                        $previousFile->setCustomProperty('repeatableRow', $row);
+                        $previousFile->save();
+                        // avoid checking the same file twice. This is a performance improvement.
+                        unset($sentFiles[$row][$fileWasSent]);
+                        break;
+                    }
+                }
+            }
 
-        $currentValuesArray = Arr::flatten(Arr::map($values, function ($value) {
-            return ! is_array($value) ? json_decode($value, true) ?? [] : $value;
-        }));
-
-        $filesToDelete = array_diff($previousValuesArray, $currentValuesArray);
-
-        foreach ($filesToDelete as $key => $value) {
-            $this->permanentDisk->delete($this->getPath().$value);
-        }
-
-        foreach ($values as $row => $value) {
-            if (empty($value)) {
-                unset($values[$row]);
+            if ($foundInSentFiles === false) {
+                    $previousFile->delete();
             }
         }
-
-        return $values;
     }
 
     protected function ajaxEndpointSuccessResponse($files = null): \Illuminate\Http\JsonResponse
