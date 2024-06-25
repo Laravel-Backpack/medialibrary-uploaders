@@ -25,7 +25,7 @@ trait HandleRepeatableUploads
     public function getPreviousRepeatableValues(Model $entry)
     {
         if ($this->canHandleMultipleFiles()) {
-            return $this->get($entry)
+            return $this->getPreviousFiles($entry)
                         ->groupBy(function ($item) {
                             return $item->getCustomProperty('repeatableRow');
                         })
@@ -40,7 +40,7 @@ trait HandleRepeatableUploads
                         ->toArray();
         }
 
-        return $this->get($entry)
+        return $this->getPreviousFiles($entry)
                     ->transform(function ($item) use ($entry) {
                         return [
                             $this->getName() => $this->getMediaIdentifier($item, $entry),
@@ -55,7 +55,7 @@ trait HandleRepeatableUploads
     public function getPreviousRepeatableMedia(Model $entry)
     {
         $orderedMedia = [];
-        $previousMedia = $this->get($entry)->transform(function ($item) {
+        $previousMedia = $this->getPreviousFiles($entry)->transform(function ($item) {
             return [$this->getName() => $item, 'order_column' => $item->getCustomProperty('repeatableRow')];
         });
         $previousMedia->each(function ($item) use (&$orderedMedia) {
