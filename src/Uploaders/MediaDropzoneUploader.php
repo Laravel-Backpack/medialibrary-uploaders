@@ -9,7 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Prologue\Alerts\Facades\Alert;
-use Symfony\Component\HttpFoundation\File\File;
+use Illuminate\Http\UploadedFile;
 
 class MediaDropzoneUploader extends MediaAjaxUploader
 {
@@ -41,7 +41,7 @@ class MediaDropzoneUploader extends MediaAjaxUploader
         }
 
         foreach ($uploadedFiles as $key => $value) {
-            $file = new File($this->temporaryDisk->path($value));
+            $file = new UploadedFile($this->temporaryDisk->path($value), $value);
 
             $this->addMediaFile($entry, $file);
         }

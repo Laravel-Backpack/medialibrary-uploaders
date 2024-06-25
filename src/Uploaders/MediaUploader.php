@@ -13,7 +13,6 @@ abstract class MediaUploader extends Uploader
     use Traits\IdentifiesMedia;
     use Traits\AddMediaToModels;
     use Traits\HasConstrainedFileAdder;
-    use Traits\HasMediaName;
     use Traits\HasCustomProperties;
     use Traits\HasSavingCallback;
     use Traits\HasCollections;
@@ -47,27 +46,6 @@ abstract class MediaUploader extends Uploader
         $crudObject['prefix'] = $configuration['path'] = '';
 
         parent::__construct($crudObject, $configuration);
-    }
-
-    /*************************
-     *     Public methods    *
-     *************************/
-    public function storeUploadedFiles(Model $entry): Model
-    {
-        if ($this->handleRepeatableFiles) {
-            return $this->handleRepeatableFiles($entry);
-        }
-
-        $this->uploadFiles($entry);
-
-        // make sure we remove the attribute from the model in case developer is using it in fillable
-        // or using guarded in their models.
-        $entry->offsetUnset($this->getName());
-        // setting the raw attributes makes sure the `attributeCastCache` property is cleared, preventing
-        // uploaded files from being re-added to the entry from the cache.
-        $entry = $entry->setRawAttributes($entry->getAttributes());
-
-        return $entry;
     }
 
     /** @deprecated - use getPreviousFiles() */

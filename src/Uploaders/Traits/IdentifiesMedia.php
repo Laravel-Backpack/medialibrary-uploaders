@@ -6,6 +6,8 @@ use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
 
 trait IdentifiesMedia
 {
+    public string $mediaName;
+    
     public function getMediaIdentifier($media, $entry = null)
     {
         $path = PathGeneratorFactory::create($media);

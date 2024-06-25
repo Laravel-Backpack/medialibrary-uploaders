@@ -9,7 +9,6 @@ use Backpack\MediaLibraryUploaders\Uploaders\MediaDropzoneUploader;
 use Backpack\MediaLibraryUploaders\Uploaders\MediaMultipleFiles;
 use Backpack\MediaLibraryUploaders\Uploaders\MediaSingleBase64Image;
 use Backpack\MediaLibraryUploaders\Uploaders\MediaSingleFile;
-use Backpack\MediaLibraryUploaders\Uploaders\MediaEasyMDEUploader;
 use Illuminate\Support\ServiceProvider;
 
 class AddonServiceProvider extends ServiceProvider
@@ -36,7 +35,6 @@ class AddonServiceProvider extends ServiceProvider
         if (class_exists(\Backpack\Pro\Uploads\BackpackAjaxUploader::class)) {
             app('UploadersRepository')->addUploaderClasses([
                 'dropzone' => MediaDropzoneUploader::class,
-                'easymde'  => MediaEasyMDEUploader::class,
             ], 'withMedia');
         }
 
