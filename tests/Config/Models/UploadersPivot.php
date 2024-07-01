@@ -1,6 +1,6 @@
 <?php
 
-namespace Backpack\Pro\Tests\Config\Models;
+namespace Backpack\MediaLibraryUploaders\Tests\Config\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Spatie\MediaLibrary\HasMedia;
