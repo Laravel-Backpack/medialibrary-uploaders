@@ -1,6 +1,6 @@
 <?php
 
-namespace Backpack\MeediaLibraryUploaders\Tests\Config\Models;
+namespace Backpack\MediaLibraryUploaders\Tests\Config\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\HasMedia;
