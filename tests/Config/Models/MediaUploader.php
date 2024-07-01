@@ -5,6 +5,9 @@ namespace Backpack\MediaLibraryUploaders\Tests\Config\Models;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use \Illuminate\Database\Eloquent\Relations\HasMany;
+use \Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use \Illuminate\Database\Eloquent\Relations\HasOne;
 
 class MediaUploader extends Model implements HasMedia
 {
