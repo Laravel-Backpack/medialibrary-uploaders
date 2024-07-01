@@ -29,7 +29,7 @@ class MediaUploader extends Model implements HasMedia
 
     public function belongsToManyRelation() : BelongsToMany
     {
-        return $this->belongsToMany(File::class, 'uploaders_pivot')
+        return $this->belongsToMany(File::class, 'uploaders_pivot', 'uploader_id')
                     ->using(UploadersPivot::class)
                     ->withPivot(['dropzone', 'easymde', 'upload', 'image', 'upload_multiple']);
     }
