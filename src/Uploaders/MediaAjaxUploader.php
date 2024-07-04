@@ -3,48 +3,28 @@
 namespace Backpack\MediaLibraryUploaders\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
-use Backpack\CRUD\app\Library\Uploaders\Support\Interfaces\UploaderInterface;
-use Illuminate\Database\Eloquent\Model;
+use Backpack\Pro\Uploads\BackpackAjaxUploader;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\File\File;
 
-class MediaAjaxUploader extends MediaUploader
+class MediaAjaxUploader extends BackpackAjaxUploader
 {
-    public static function for(array $field, $configuration): UploaderInterface
+    use Traits\IdentifiesMedia;
+    use Traits\AddMediaToModels;
+    use Traits\HasConstrainedFileAdder;
+    use Traits\HasCustomProperties;
+    use Traits\HasSavingCallback;
+    use Traits\HasCollections;
+    use Traits\RetrievesUploadedFiles;
+    use Traits\HandleRepeatableUploads;
+    use Traits\DeletesUploadedFiles;
+
+    public function __construct(array $crudObject, array $configuration)
     {
-        return (new self($field, $configuration))->multiple();
-    }
-
-    public function uploadFiles(Model $entry, $value = null)
-    {
-        $temporaryDisk = CRUD::get('dropzone.temporary_disk');
-        $temporaryFolder = CRUD::get('dropzone.temporary_folder');
-
-        $uploads = $value ?? CRUD::getRequest()->input($this->getName()) ?? [];
-
-        $uploads = is_array($uploads) ? $uploads : (json_decode($uploads, true) ?? []);
-
-        $uploadedFiles = array_filter($uploads, function ($value) use ($temporaryFolder, $temporaryDisk) {
-            return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
-        });
-
-        $previousSentFiles = array_filter($uploads, function ($value) use ($temporaryFolder) {
-            return strpos($value, $temporaryFolder) === false;
-        });
-
-        $previousFiles = $this->get($entry);
-
-        foreach ($previousFiles as $previousFile) {
-            if (! in_array($this->getMediaIdentifier($previousFile, $entry), $previousSentFiles)) {
-                $previousFile->delete();
-            }
-        }
-
-        foreach ($uploadedFiles as $key => $value) {
-            $file = new File(Storage::disk($temporaryDisk)->path($value));
-
-            $this->addMediaFile($entry, $file);
-        }
+        parent::__construct($crudObject, $configuration);
+        $this->mediaName = $configuration['mediaName'] ?? $crudObject['name'];
+        $this->savingEventCallback = $configuration['whenSaving'] ?? null;
+        $this->collection = $configuration['collection'] ?? 'default';
     }
 
     public function uploadRepeatableFiles($values, $previousValues, $entry = null)
@@ -83,15 +63,16 @@ class MediaAjaxUploader extends MediaUploader
             $fileIdentifier = $this->getMediaIdentifier($previousFile, $entry);
             if (empty($sentFiles)) {
                 $previousFile->delete();
+
                 continue;
             }
-            
+
             $foundInSentFiles = false;
-            foreach($sentFiles as $row => $sentFilesInRow) {
+            foreach ($sentFiles as $row => $sentFilesInRow) {
                 $fileWasSent = array_search($fileIdentifier, $sentFilesInRow, true);
-                if($fileWasSent !== false) {
+                if ($fileWasSent !== false) {
                     $foundInSentFiles = true;
-                    if($row !== $previousFile->getCustomProperty('repeatableRow')) {
+                    if ($row !== $previousFile->getCustomProperty('repeatableRow')) {
                         $previousFile->setCustomProperty('repeatableRow', $row);
                         $previousFile->save();
                         // avoid checking the same file twice. This is a performance improvement.
@@ -102,7 +83,7 @@ class MediaAjaxUploader extends MediaUploader
             }
 
             if ($foundInSentFiles === false) {
-                    $previousFile->delete();
+                $previousFile->delete();
             }
         }
     }
