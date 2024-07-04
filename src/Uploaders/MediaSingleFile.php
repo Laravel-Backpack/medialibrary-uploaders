@@ -5,6 +5,7 @@ namespace Backpack\MediaLibraryUploaders\Uploaders;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 
 class MediaSingleFile extends MediaUploader
 {
@@ -13,6 +14,10 @@ class MediaSingleFile extends MediaUploader
         $value = $value ?? CRUD::getRequest()->file($this->getName());
 
         $previousFile = $this->getPreviousFiles($entry);
+
+        if (is_a($previousFile, Collection::class, true)) {
+            $previousFile = null;
+        }
 
         if ($previousFile && ($value && is_a($value, UploadedFile::class) || request()->has($this->getName()))) {
             $previousFile->delete();
@@ -52,5 +57,23 @@ class MediaSingleFile extends MediaUploader
                 $previousFile->delete();
             }
         }
+    }
+
+    /**
+     * Single file uploaders send no value when they are not dirty.
+     */
+    public function shouldKeepPreviousValueUnchanged(Model $entry, $entryValue): bool
+    {
+        return is_string($entryValue);
+    }
+
+    protected function hasDeletedFiles($entryValue): bool
+    {
+        return $entryValue === null;
+    }
+
+    protected function shouldUploadFiles($value): bool
+    {
+        return is_a($value, 'Illuminate\Http\UploadedFile', true);
     }
 }

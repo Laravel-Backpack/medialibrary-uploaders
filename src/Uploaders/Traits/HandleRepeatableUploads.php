@@ -22,6 +22,36 @@ trait HandleRepeatableUploads
         return $values->toArray();
     }
 
+    protected function uploadRelationshipFiles(Model $entry): Model
+    {
+        $entryValue = $entry->{$this->getAttributeName()};
+
+        if ($this->handleMultipleFiles && is_string($entryValue)) {
+            try {
+                $entryValue = json_decode($entryValue, true);
+            } catch (\Exception) {
+                return $entry;
+            }
+        }
+
+        if ($this->hasDeletedFiles($entryValue)) {
+            $entry->{$this->getAttributeName()} = $this->uploadFiles($entry, false);
+            $this->updatedPreviousFiles = $this->getEntryAttributeValue($entry);
+        }
+
+        if ($this->shouldKeepPreviousValueUnchanged($entry, $entryValue)) {
+            $entry->{$this->getAttributeName()} = $this->updatedPreviousFiles ?? $this->getEntryOriginalValue($entry);
+
+            return $entry;
+        }
+
+        if ($this->shouldUploadFiles($entryValue)) {
+            $entry->{$this->getAttributeName()} = $this->uploadFiles($entry, $entryValue);
+        }
+
+        return $entry;
+    }
+
     public function getPreviousRepeatableValues(Model $entry)
     {
         if ($this->canHandleMultipleFiles()) {

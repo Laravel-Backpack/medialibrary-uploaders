@@ -74,4 +74,21 @@ class MediaMultipleFiles extends MediaUploader
             }
         }
     }
+
+    protected function hasDeletedFiles($value): bool
+    {
+        return empty($this->getFilesToDeleteFromRequest()) ? false : true;
+    }
+
+    protected function getEntryAttributeValue(Model $entry)
+    {
+        $value = $entry->{$this->getAttributeName()};
+
+        return isset($entry->getCasts()[$this->getName()]) ? $value : json_encode($value);
+    }
+
+    private function getFilesToDeleteFromRequest(): array
+    {
+        return collect(CRUD::getRequest()->get('clear_'.$this->getNameForRequest()))->flatten()->toArray();
+    }
 }
