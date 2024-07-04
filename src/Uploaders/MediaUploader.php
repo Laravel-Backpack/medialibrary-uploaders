@@ -17,6 +17,7 @@ abstract class MediaUploader extends Uploader
     use Traits\HasCollections;
     use Traits\RetrievesUploadedFiles;
     use Traits\HandleRepeatableUploads;
+    use Traits\DeletesUploadedFiles;
 
     public $displayConversions;
 
@@ -84,4 +85,5 @@ abstract class MediaUploader extends Uploader
 
         return false;
     }
+
 }

@@ -40,7 +40,7 @@ class MediaUploadersTest extends FeatureTestCase
 
         $response->assertRedirect($this->testBaseUrl);
 
-        $this->assertDatabaseCount('media_uploaders', 1);
+        $this->assertDatabaseCount('uploaders', 1);
 
         $uploader = MediaUploader::first();
 
@@ -62,7 +62,7 @@ class MediaUploadersTest extends FeatureTestCase
 
         $response->assertRedirect($this->testBaseUrl);
 
-        $this->assertDatabaseCount('media_uploaders', 1);
+        $this->assertDatabaseCount('uploaders', 1);
 
         $uploader = MediaUploader::first();
 
@@ -86,7 +86,7 @@ class MediaUploadersTest extends FeatureTestCase
 
         $response->assertRedirect($this->testBaseUrl);
 
-        $this->assertDatabaseCount('media_uploaders', 1);
+        $this->assertDatabaseCount('uploaders', 1);
 
         $uploader = MediaUploader::first();
 
@@ -135,7 +135,7 @@ class MediaUploadersTest extends FeatureTestCase
 
         $response->assertRedirect($this->testBaseUrl);
 
-        $this->assertDatabaseCount('media_uploaders', 1);
+        $this->assertDatabaseCount('uploaders', 1);
 
         $uploader = MediaUploader::first();
 
@@ -163,7 +163,7 @@ class MediaUploadersTest extends FeatureTestCase
 
         $response->assertRedirect($this->testBaseUrl);
 
-        $this->assertDatabaseCount('media_uploaders', 1);
+        $this->assertDatabaseCount('uploaders', 1);
 
         $uploader = MediaUploader::first();
 
@@ -188,7 +188,7 @@ class MediaUploadersTest extends FeatureTestCase
 
         $response->assertRedirect($this->testBaseUrl);
 
-        $this->assertDatabaseCount('media_uploaders', 1);
+        $this->assertDatabaseCount('uploaders', 1);
 
         $uploader = MediaUploader::first();
 
@@ -209,7 +209,7 @@ class MediaUploadersTest extends FeatureTestCase
 
         $response->assertStatus(200);
 
-        $this->assertDatabaseCount('media_uploaders', 0);
+        $this->assertDatabaseCount('uploaders', 0);
 
         $files = Storage::disk('uploaders')->allFiles();
 

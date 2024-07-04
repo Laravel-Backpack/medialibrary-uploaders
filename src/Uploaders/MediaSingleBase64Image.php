@@ -5,14 +5,19 @@ namespace Backpack\MediaLibraryUploaders\Uploaders;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 
 class MediaSingleBase64Image extends MediaUploader
 {
-    public function uploadFiles(Model $entry, $values = null)
+    public function uploadFiles(Model $entry, $value = null)
     {
         $value = $value ?? CrudPanelFacade::getRequest()->get($this->getName());
 
         $previousImage = $this->getPreviousFiles($entry);
+
+        if (is_a($previousImage, Collection::class, true)) {
+            $previousImage = null;
+        }
 
         if (! $value && $previousImage) {
             $previousImage->delete();
@@ -24,7 +29,6 @@ class MediaSingleBase64Image extends MediaUploader
             if ($previousImage) {
                 $previousImage->delete();
             }
-
             $this->addMediaFile($entry, $value);
         }
     }
@@ -65,5 +69,15 @@ class MediaSingleBase64Image extends MediaUploader
         });
 
         return is_array($previousImage) ? array_shift($previousImage) : null;
+    }
+
+    protected function shouldUploadFiles($value): bool
+    {
+        return $value && is_string($value) && Str::startsWith($value, 'data:image');
+    }
+
+    public function shouldKeepPreviousValueUnchanged(Model $entry, $entryValue): bool
+    {
+        return $entry->exists && is_string($entryValue) && ! Str::startsWith($entryValue, 'data:image');
     }
 }

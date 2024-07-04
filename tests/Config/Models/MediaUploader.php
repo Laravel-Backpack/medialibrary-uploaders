@@ -21,17 +21,19 @@ class MediaUploader extends Model implements HasMedia
      */
     protected $fillable = ['repeatable'];
 
+    protected $table = 'uploaders';
+
     public $timestamps = false;
 
     protected $casts = [
         'repeatable' => 'json',
     ];
 
-    public function belongsToManyRelation() : BelongsToMany
+    public function documents() : BelongsToMany
     {
-        return $this->belongsToMany(File::class, 'uploaders_pivot', 'uploader_id')
+        return $this->belongsToMany(File::class, 'uploaders_pivot', 'uploader_id', 'file_id')
                     ->using(UploadersPivot::class)
-                    ->withPivot(['dropzone', 'easymde', 'upload', 'image', 'upload_multiple']);
+                    ->withPivot(['id', 'dropzone', 'easymde', 'upload', 'image', 'upload_multiple']);
     }
 
     public function hasManyRelation() : HasMany

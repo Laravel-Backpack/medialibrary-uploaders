@@ -20,8 +20,10 @@ class File extends Model implements HasMedia
 
     public $timestamps = false;
 
-    public function belongsToManyRelation()
+    protected $table = 'documents';
+
+    public function uploaders()
     {
-        return $this->belongsToMany(MediaUploader::class, 'media_uploaders_pivot');
+        return $this->belongsToMany(MediaUploader::class, 'uploaders_pivot', 'file_id', 'uploader_id');
     }
 }

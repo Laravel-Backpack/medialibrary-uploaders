@@ -13,5 +13,9 @@ class UploadersPivot extends Pivot implements HasMedia
 
     public $timestamps = false;
 
+    public $incrementing = true;
+
     protected $table = 'uploaders_pivot';
+
+    protected $fillable = ['id', 'uploader_id', 'file_id', 'dropzone', 'easymde', 'upload', 'image', 'upload_multiple'];
 }
