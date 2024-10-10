@@ -90,11 +90,11 @@ abstract class MediaUploader extends Uploader
             if (! is_array($values)) {
                 $values = json_decode($values, true);
             }
-            
+
             $repeatableUploaders = array_merge(app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()), [$this]);
             foreach ($repeatableUploaders as $uploader) {
                 $uploadValues = $uploader->getPreviousRepeatableValues($entry);
-                
+
                 $values = $this->mergeValuesRecursive($values, $uploadValues);
             }
 
@@ -161,7 +161,7 @@ abstract class MediaUploader extends Uploader
         $constrainedMedia->setMediaUploader($this);
 
         if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-            $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
+            $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this, $entry]);
         }
 
         if (! $constrainedMedia) {
@@ -209,7 +209,7 @@ abstract class MediaUploader extends Uploader
         });
         $previousMedia->each(function($item) use (&$orderedMedia) {
             $orderedMedia[] = $item[$this->getName()];
-        }); 
+        });
 
         return $orderedMedia;
     }
@@ -236,7 +236,7 @@ abstract class MediaUploader extends Uploader
         if (get_class($file) === File::class) {
             return $entry->addMedia($file->getPathName());
         }
-        
+
     }
 
     private function getConversionToDisplay($item)
