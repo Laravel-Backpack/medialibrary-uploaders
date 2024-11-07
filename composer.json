@@ -14,7 +14,7 @@
         "Laravel", "Backpack", "Backpack for Laravel", "Backpack Addon", "spatie medialibrary uploaders"
     ],
     "require": {
-        "backpack/crud": "dev-fix-uploaders as 6.7",
+        "backpack/crud": "^6.0|dev-next",
         "spatie/laravel-medialibrary": "^10.7|^11.3"
     },
     "require-dev": {
