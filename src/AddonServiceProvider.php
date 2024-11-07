@@ -41,8 +41,10 @@ class AddonServiceProvider extends ServiceProvider
         // register media upload macros on crud fields and columns.
         if (! CrudField::hasMacro('withMedia')) {
             CrudField::macro('withMedia', function ($uploadDefinition = [], $subfield = null, $registerEvents = true) {
-                $uploadDefinition = is_array($uploadDefinition) ? $uploadDefinition : [];
                 /** @var CrudField $this */
+                $uploadDefinition = is_array($uploadDefinition) ? $uploadDefinition : [];
+                $this->setAttributeValue('withMedia', $uploadDefinition);
+                $this->save();
                 RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield, $registerEvents);
 
                 return $this;
@@ -51,8 +53,10 @@ class AddonServiceProvider extends ServiceProvider
 
         if (! CrudColumn::hasMacro('withMedia')) {
             CrudColumn::macro('withMedia', function ($uploadDefinition = [], $subfield = null, $registerEvents = true) {
-                $uploadDefinition = is_array($uploadDefinition) ? $uploadDefinition : [];
                 /** @var CrudColumn $this */
+                $uploadDefinition = is_array($uploadDefinition) ? $uploadDefinition : [];
+                $this->setAttributeValue('withMedia', $uploadDefinition);
+                $this->save();
                 RegisterUploadEvents::handle($this, $uploadDefinition, 'withMedia', $subfield, $registerEvents);
 
                 return $this;
