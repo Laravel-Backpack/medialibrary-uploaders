@@ -4,8 +4,8 @@ namespace Backpack\MediaLibraryUploaders\Uploaders;
 
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class MediaSingleBase64Image extends MediaUploader
 {
@@ -71,7 +71,7 @@ class MediaSingleBase64Image extends MediaUploader
         return is_array($previousImage) ? array_shift($previousImage) : null;
     }
 
-    protected function shouldUploadFiles($value): bool
+    public function shouldUploadFiles($value): bool
     {
         return $value && is_string($value) && Str::startsWith($value, 'data:image');
     }

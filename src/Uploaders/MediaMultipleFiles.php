@@ -75,12 +75,12 @@ class MediaMultipleFiles extends MediaUploader
         }
     }
 
-    protected function hasDeletedFiles($value): bool
+    public function hasDeletedFiles($value): bool
     {
         return empty($this->getFilesToDeleteFromRequest()) ? false : true;
     }
 
-    protected function getEntryAttributeValue(Model $entry)
+    public function getEntryAttributeValue(Model $entry)
     {
         $value = $entry->{$this->getAttributeName()};
 
