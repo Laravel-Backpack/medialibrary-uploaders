@@ -7,7 +7,7 @@ use Illuminate\Support\Collection;
 
 trait HandleRepeatableUploads
 {
-    public function processRepeatableUploads(Model $entry, Collection $values): array
+    public function processRepeatableUploads(Model $entry, Collection $values): Collection
     {
         foreach (app('UploadersRepository')->getRepeatableUploadersFor($this->getRepeatableContainerName()) as $uploader) {
             $uploader->uploadRepeatableFiles($values->pluck($uploader->getName())->toArray(), $uploader->getPreviousRepeatableMedia($entry), $entry);
@@ -19,7 +19,7 @@ trait HandleRepeatableUploads
             });
         }
 
-        return $values->toArray();
+        return $values;
     }
 
     protected function uploadRelationshipFiles(Model $entry): Model
