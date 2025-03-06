@@ -14,7 +14,7 @@
         "Laravel", "Backpack", "Backpack for Laravel", "Backpack Addon", "spatie medialibrary uploaders"
     ],
     "require": {
-        "backpack/crud": "7.0.0-alpha.1",
+        "backpack/crud": "^7.0.0-alpha",
         "spatie/laravel-medialibrary": "^10.7||^11.3"
     },
     "require-dev": {
