@@ -34,15 +34,14 @@ abstract class MediaUploader extends Uploader
         $this->displayConversions = $configuration['displayConversions'] ?? [];
         $this->displayConversions = (array) $this->displayConversions;
 
-        $modelDefinition = $this->getModelInstance($crudObject)->getRegisteredMediaCollections()
-                            ->reject(function ($item) {
-                                $item->name !== $this->collection;
-                            })
-                            ->first();
+        $modelDefinition = $this->getModelInstance($crudObject)
+            ->getRegisteredMediaCollections()
+            ->reject(fn($item) => $item->name !== $this->collection)
+            ->first();
 
-        $configuration['disk'] = $modelDefinition?->diskName ?? null;
-
-        $configuration['disk'] = empty($configuration['disk']) ? $crudObject['disk'] ?? config('media-library.disk_name') : null;
+        $configuration['disk'] = $modelDefinition?->diskName
+            ?? $crudObject['disk']
+            ?? config('media-library.disk_name');
 
         // read https://spatie.be/docs/laravel-medialibrary/v10/advanced-usage/using-a-custom-directory-structure#main
         // on how to customize file directory
