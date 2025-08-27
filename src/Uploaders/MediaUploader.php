@@ -266,6 +266,10 @@ abstract class MediaUploader extends Uploader
     {
         $path = PathGeneratorFactory::create($media);
 
+        if ($entry) {
+            $entry->registerMediaConversions();
+        }
+
         if ($entry && ! empty($entry->mediaConversions)) {
             $conversion = array_values(array_filter($entry->mediaConversions, function ($item) use ($media) {
                 return $item->getName() === $this->getConversionToDisplay($media);
