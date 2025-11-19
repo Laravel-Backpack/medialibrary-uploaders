@@ -14,16 +14,25 @@
         "Laravel", "Backpack", "Backpack for Laravel", "Backpack Addon", "spatie medialibrary uploaders"
     ],
     "require": {
-        "backpack/crud": "^6.0",
-        "spatie/laravel-medialibrary": "^10.7|^11.3"
+        "backpack/crud": "^7.0",
+        "spatie/laravel-medialibrary": "^10.7||^11.3"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.0|^10.0",
-        "orchestra/testbench": "~6|^8.0"
+       "phpunit/phpunit": "^11.0",
+        "orchestra/testbench": "^10.0",
+        "spatie/laravel-translatable": "^6.0"
     },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Backpack\\MediaLibraryUploaders\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Backpack\\MediaLibraryUploaders\\Tests\\": "tests",
+            "Backpack\\CRUD\\Tests\\": "vendor/backpack/crud/tests"
         }
     },
     "scripts": {

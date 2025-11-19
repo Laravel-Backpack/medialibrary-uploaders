@@ -12,11 +12,11 @@ More exactly, it provides the `->withMedia()` helper, that will handle the file 
 
 ## Requirements
 
-**Install and use `spatie/laravel-medialibrary` v10**. If you haven't already, please make sure you've installed `spatie/laravel-medialibrary` and followed all installation steps in [their docs](https://spatie.be/docs/laravel-medialibrary/v10/installation-setup):
+**Install and use `spatie/laravel-medialibrary` v10|v11**. If you haven't already, please make sure you've installed `spatie/laravel-medialibrary` and followed all installation steps in [their docs](https://spatie.be/docs/laravel-medialibrary/v11/installation-setup):
 
 ``` bash
 # require the package
-composer require "spatie/laravel-medialibrary:^10.0.0"
+composer require "spatie/laravel-medialibrary:^11.0"
 
 # prepare the database
 # NOTE: Spatie migration does not come with a `down()` method by default, add one now if you need it
@@ -33,7 +33,7 @@ php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServicePr
 
 ```
 
-Then prepare your Models to use `spatie/laravel-medialibrary`, by adding the `InteractsWithMedia` trait to your model and implement the `HasMedia` interface like explained on [Media Library Documentation](https://spatie.be/docs/laravel-medialibrary/v10/basic-usage/preparing-your-model).
+Then prepare your Models to use `spatie/laravel-medialibrary`, by adding the `InteractsWithMedia` trait to your model and implement the `HasMedia` interface like explained on [Media Library Documentation](https://spatie.be/docs/laravel-medialibrary/v11/basic-usage/preparing-your-model).
 
 ## Installation
 
@@ -100,11 +100,11 @@ CRUD::field('main_image')
         ]);
 ```
 
-**NOTE:** Some methods will be called automatically by Backpack; You shoudn't call them inside the closure used for configuration: `toMediaCollection()`, `setName()`, `usingName()`, `setOrder()`, `toMediaCollectionFromRemote()` and `toMediaLibrary()`. They will throw an error if you manually try to call them in the closure. 
+**NOTE:** Some methods will be called automatically by Backpack; You shouldn't call them inside the closure used for configuration: `toMediaCollection()`, `setName()`, `usingName()`, `setOrder()`, `toMediaCollectionFromRemote()` and `toMediaLibrary()`. They will throw an error if you manually try to call them in the closure. 
 
 ### Defining media collection in the model
 
-You can also have the collection configured in your model as explained in [Spatie Documentation](https://spatie.be/docs/laravel-medialibrary/v10/working-with-media-collections/defining-media-collections), in that case, you just need to pass the `collection` configuration key. But you are still able to configure all the other options including the `whenSaving` callback.
+You can also have the collection configured in your model as explained in [Spatie Documentation](https://spatie.be/docs/laravel-medialibrary/v11/working-with-media-collections/defining-media-collections), in that case, you just need to pass the `collection` configuration key. But you are still able to configure all the other options including the `whenSaving` callback.
 
 ```php
 // In your Model.php
@@ -151,7 +151,7 @@ CRUD::field('main_image')
             'displayConversions' => 'thumb'
         ]);
         
-// you can also configure aditional manipulations in the `whenSaving` callback
+// you can also configure additional manipulations in the `whenSaving` callback
 ->withMedia([
     'displayConversions' => 'thumb',
     'whenSaving' => function($media) {
@@ -183,7 +183,7 @@ You can normally assign custom properties to your media with `->withCustomProper
 
 ## Change log
 
-Changes are documented here on Github. Please see the [Releases tab](https://github.com/backpack/media-library-connector/releases).
+Changes are documented here on Github. Please see the [Releases tab](https://github.com/Laravel-Backpack/medialibrary-uploaders/releases).
 
 ## Testing
 
