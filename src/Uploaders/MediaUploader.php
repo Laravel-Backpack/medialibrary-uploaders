@@ -38,9 +38,12 @@ abstract class MediaUploader extends Uploader
                             })
                             ->first();
 
-        $configuration['disk'] ??= $modelDefinition?->diskName ?? null;
-
-        $configuration['disk'] = empty($configuration['disk']) ? ($crudObject['disk'] ?? config('media-library.disk_name')) : $configuration['disk'];
+        // Respect disk from withMedia configuration if present (highest priority),
+        // otherwise use model's registered media collection disk or default
+        $configuration['disk'] = $configuration['disk']
+            ?? $modelDefinition?->diskName
+            ?? $crudObject['disk']
+            ?? config('media-library.disk_name');
 
         // read https://spatie.be/docs/laravel-medialibrary/v11/advanced-usage/using-a-custom-directory-structure#main
         // on how to customize file directory
