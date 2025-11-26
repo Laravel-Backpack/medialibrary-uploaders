@@ -21,10 +21,29 @@ class MediaAjaxUploader extends BackpackAjaxUploader
 
     public function __construct(array $crudObject, array $configuration)
     {
-        parent::__construct($crudObject, $configuration);
+        
         $this->mediaName = $configuration['mediaName'] ?? $crudObject['name'];
         $this->savingEventCallback = $configuration['whenSaving'] ?? null;
         $this->collection = $configuration['collection'] ?? 'default';
+
+        $this->displayConversions = $configuration['displayConversions'] ?? [];
+
+        $modelDefinition = $this->getModelInstance($crudObject)->getRegisteredMediaCollections()
+                            ->reject(function ($item) {
+                                return $item->name !== $this->collection;
+                            })
+                            ->first();
+
+        $configuration['disk'] ??= $modelDefinition?->diskName ?? null;
+
+        $configuration['disk'] = empty($configuration['disk']) ? ($crudObject['disk'] ?? config('media-library.disk_name')) : $configuration['disk'];
+
+        // read https://spatie.be/docs/laravel-medialibrary/v11/advanced-usage/using-a-custom-directory-structure#main
+        // on how to customize file directory
+        $crudObject['prefix'] = $configuration['path'] = '';
+
+        parent::__construct($crudObject, $configuration);
+
     }
 
     public function uploadRepeatableFiles($values, $previousValues, $entry = null)

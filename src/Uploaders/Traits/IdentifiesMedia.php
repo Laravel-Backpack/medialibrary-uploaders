@@ -22,8 +22,9 @@ trait IdentifiesMedia
 
             return $path->getPathForConversions($media).$conversion->getConversionFile($media);
         }
+        
         if (is_null($path)) {
-            dd($media);
+            return '';
         }
 
         return $path->getPath($media).$media->file_name;
