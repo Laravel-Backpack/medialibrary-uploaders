@@ -50,4 +50,9 @@ trait AddMediaToModels
 
         return $entry;
     }
+
+    private function getModelInstance($crudObject): Model
+    {
+        return new ($crudObject['baseModel'] ?? get_class(app('crud')->getModel()));
+    }
 }

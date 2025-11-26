@@ -5,7 +5,6 @@ namespace Backpack\MediaLibraryUploaders\Uploaders;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\CRUD\app\Library\Uploaders\Support\Interfaces\UploaderInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Prologue\Alerts\Facades\Alert;

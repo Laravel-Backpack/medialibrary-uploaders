@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 trait RetrievesUploadedFiles
 {
+    public $displayConversions = [];
+
     public function retrieveUploadedFiles(Model $entry): Model
     {
         $media = $this->getPreviousFiles($entry);
@@ -64,4 +66,14 @@ trait RetrievesUploadedFiles
         return $media->first();
     }
 
+    public function getConversionToDisplay($item)
+    {
+        foreach ($this->displayConversions as $displayConversion) {
+            if ($item->hasGeneratedConversion($displayConversion)) {
+                return $displayConversion;
+            }
+        }
+
+        return false;
+    }
 }

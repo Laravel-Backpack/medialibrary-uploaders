@@ -19,8 +19,6 @@ abstract class MediaUploader extends Uploader
     use Traits\HandleRepeatableUploads;
     use Traits\DeletesUploadedFiles;
 
-    public $displayConversions;
-
     public $order;
 
     public function __construct(array $crudObject, array $configuration)
@@ -34,7 +32,7 @@ abstract class MediaUploader extends Uploader
 
         $modelDefinition = $this->getModelInstance($crudObject)->getRegisteredMediaCollections()
                             ->reject(function ($item) {
-                                $item->name !== $this->collection;
+                                return $item->name !== $this->collection;
                             })
                             ->first();
 
@@ -63,27 +61,4 @@ abstract class MediaUploader extends Uploader
 
         return $media->first();
     }
-
-    
-
-    /**************************************************
-     *     Private methods- default implementation    *
-     **************************************************/
-
-    private function getModelInstance($crudObject): Model
-    {
-        return new ($crudObject['baseModel'] ?? get_class(app('crud')->getModel()));
-    }
-
-    private function getConversionToDisplay($item)
-    {
-        foreach ($this->displayConversions as $displayConversion) {
-            if ($item->hasGeneratedConversion($displayConversion)) {
-                return $displayConversion;
-            }
-        }
-
-        return false;
-    }
-
 }
