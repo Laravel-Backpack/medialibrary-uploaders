@@ -5,6 +5,7 @@ namespace Backpack\MediaLibraryUploaders\Uploaders;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\Pro\Uploads\BackpackAjaxUploader;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\File\File;
 
 class MediaAjaxUploader extends BackpackAjaxUploader
@@ -65,11 +66,11 @@ class MediaAjaxUploader extends BackpackAjaxUploader
                 $files = json_decode($files, true) ?? [];
             }
             $uploadedFiles = array_filter($files, function ($value) use ($temporaryFolder, $temporaryDisk) {
-                return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
+                return Str::startsWith($value, Str::finish($temporaryFolder, '/')) && Storage::disk($temporaryDisk)->exists($value);
             });
 
             $sentFiles = array_merge($sentFiles, [$row => array_filter($files, function ($value) use ($temporaryFolder) {
-                return strpos($value, $temporaryFolder) === false;
+                return ! Str::startsWith($value, Str::finish($temporaryFolder, '/'));
             })]);
 
             foreach ($uploadedFiles ?? [] as $key => $value) {

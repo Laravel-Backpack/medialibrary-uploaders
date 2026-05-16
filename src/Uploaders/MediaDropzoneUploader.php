@@ -24,11 +24,11 @@ class MediaDropzoneUploader extends MediaAjaxUploader
         $uploads = is_array($uploads) ? $uploads : (json_decode($uploads, true) ?? []);
 
         $uploadedFiles = array_filter($uploads, function ($value) {
-            return strpos($value, $this->temporaryFolder) !== false;
+            return Str::startsWith($value, Str::finish($this->temporaryFolder, '/'));
         });
 
         $previousSentFiles = array_filter($uploads, function ($value) {
-            return strpos($value, $this->temporaryFolder) === false;
+            return ! Str::startsWith($value, Str::finish($this->temporaryFolder, '/'));
         });
 
         $previousDatabaseFiles = $this->getPreviousFiles($entry) ?? [];
@@ -57,11 +57,11 @@ class MediaDropzoneUploader extends MediaAjaxUploader
             $files = is_array($files) ? $files : (json_decode($files, true) ?? []);
 
             $uploadedFiles = array_filter($files, function ($value) {
-                return strpos($value, $this->temporaryFolder) !== false;
+                return Str::startsWith($value, Str::finish($this->temporaryFolder, '/'));
             });
 
             $sentFiles = array_merge($sentFiles, [$row => array_filter($files, function ($value) {
-                return strpos($value, $this->temporaryFolder) === false;
+                return ! Str::startsWith($value, Str::finish($this->temporaryFolder, '/'));
             })]);
 
             foreach ($uploadedFiles ?? [] as $key => $file) {
