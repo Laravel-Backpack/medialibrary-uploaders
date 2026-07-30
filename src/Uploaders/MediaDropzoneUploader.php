@@ -7,7 +7,7 @@ use Backpack\CRUD\app\Library\Uploaders\Support\Interfaces\UploaderInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Prologue\Alerts\Facades\Alert;
+use Backpack\CRUD\app\Library\Alerts\Alert;
 use Illuminate\Http\UploadedFile;
 
 class MediaDropzoneUploader extends MediaAjaxUploader
