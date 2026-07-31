@@ -23,7 +23,7 @@ trait AddMediaToModels
         $constrainedMedia->setMediaUploader($this);
 
         if ($this->savingEventCallback && is_callable($this->savingEventCallback)) {
-            $constrainedMedia = call_user_func_array($this->savingEventCallback, [$constrainedMedia, $this]);
+            $constrainedMedia = ($this->savingEventCallback)($constrainedMedia, $this);
         }
 
         if (! $constrainedMedia) {
