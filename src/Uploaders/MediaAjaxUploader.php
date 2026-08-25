@@ -66,7 +66,11 @@ class MediaAjaxUploader extends BackpackAjaxUploader
                 $files = json_decode($files, true) ?? [];
             }
             $uploadedFiles = array_filter($files, function ($value) use ($temporaryFolder, $temporaryDisk) {
-                return Str::startsWith($value, Str::finish($temporaryFolder, '/')) && Storage::disk($temporaryDisk)->exists($value);
+                if (! Str::startsWith($value, Str::finish($temporaryFolder, '/')) || Str::startsWith($value, '..') || Str::contains($value, ['/..', '\\..'])) {
+                    return false;
+                }
+
+                return Storage::disk($temporaryDisk)->exists($value);
             });
 
             $sentFiles = array_merge($sentFiles, [$row => array_filter($files, function ($value) use ($temporaryFolder) {
