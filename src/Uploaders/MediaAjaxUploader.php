@@ -6,6 +6,7 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\CRUD\app\Library\Uploaders\Support\Interfaces\UploaderInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\File\File;
 
 class MediaAjaxUploader extends MediaUploader
@@ -25,12 +26,20 @@ class MediaAjaxUploader extends MediaUploader
         $uploads = is_array($uploads) ? $uploads : (json_decode($uploads, true) ?? []);
 
         $uploadedFiles = array_filter($uploads, function ($value) use ($temporaryFolder, $temporaryDisk) {
-            return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
+            return $this->isTemporaryFile($value, $temporaryFolder, $temporaryDisk);
         });
 
         $previousSentFiles = array_filter($uploads, function ($value) use ($temporaryFolder) {
-            return strpos($value, $temporaryFolder) === false;
+            return ! $this->isInTemporaryFolder($value, $temporaryFolder);
         });
+
+        // name the new files before changing anything, so a file that is not allowed does not remove or leave files behind
+        $filesToAdd = [];
+
+        foreach ($uploadedFiles as $key => $value) {
+            $file = new File(Storage::disk($temporaryDisk)->path($value));
+            $filesToAdd[] = [$file, $this->getFileName($file)];
+        }
 
         $previousFiles = $this->get($entry);
 
@@ -40,10 +49,8 @@ class MediaAjaxUploader extends MediaUploader
             }
         }
 
-        foreach ($uploadedFiles as $key => $value) {
-            $file = new File(Storage::disk($temporaryDisk)->path($value));
-
-            $this->addMediaFile($entry, $file);
+        foreach ($filesToAdd as [$file, $fileName]) {
+            $this->addMediaFile($entry, $file, null, $fileName);
         }
     }
 
@@ -61,22 +68,28 @@ class MediaAjaxUploader extends MediaUploader
         }, $values);
 
         $sentFiles = [];
+        // name all the files before adding any, so a file that is not allowed does not leave the others behind
+        $filesToAdd = [];
         foreach ($values as $row => $files) {
             if (! is_array($files)) {
                 $files = json_decode($files, true) ?? [];
             }
             $uploadedFiles = array_filter($files, function ($value) use ($temporaryFolder, $temporaryDisk) {
-                return strpos($value, $temporaryFolder) !== false && Storage::disk($temporaryDisk)->exists($value);
+                return $this->isTemporaryFile($value, $temporaryFolder, $temporaryDisk);
             });
 
             $sentFiles = array_merge($sentFiles, [$row => array_filter($files, function ($value) use ($temporaryFolder) {
-                return strpos($value, $temporaryFolder) === false;
+                return ! $this->isInTemporaryFolder($value, $temporaryFolder);
             })]);
 
             foreach ($uploadedFiles ?? [] as $key => $value) {
                 $file = new File(Storage::disk($temporaryDisk)->path($value));
-                $this->addMediaFile($entry, $file, $row);
+                $filesToAdd[] = [$row, $file, $this->getFileName($file)];
             }
+        }
+
+        foreach ($filesToAdd as [$row, $file, $fileName]) {
+            $this->addMediaFile($entry, $file, $row, $fileName);
         }
 
         foreach ($previousValues as $previousFile) {
@@ -85,7 +98,7 @@ class MediaAjaxUploader extends MediaUploader
                 $previousFile->delete();
                 continue;
             }
-            
+
             $foundInSentFiles = false;
             foreach($sentFiles as $row => $sentFilesInRow) {
                 $fileWasSent = array_search($fileIdentifier, $sentFilesInRow, true);
@@ -105,5 +118,22 @@ class MediaAjaxUploader extends MediaUploader
                     $previousFile->delete();
             }
         }
+    }
+
+    private function isInTemporaryFolder(mixed $value, mixed $temporaryFolder): bool
+    {
+        return is_string($value) && is_string($temporaryFolder) && $temporaryFolder !== '' && Str::startsWith($value, Str::finish($temporaryFolder, '/'));
+    }
+
+    /**
+     * A temporary file must live inside the temporary folder, without parent directory segments.
+     */
+    private function isTemporaryFile(mixed $value, mixed $temporaryFolder, mixed $temporaryDisk): bool
+    {
+        if (! $this->isInTemporaryFolder($value, $temporaryFolder) || Str::startsWith($value, '..') || Str::contains($value, ['/..', '\\..'])) {
+            return false;
+        }
+
+        return Storage::disk($temporaryDisk)->exists($value);
     }
 }

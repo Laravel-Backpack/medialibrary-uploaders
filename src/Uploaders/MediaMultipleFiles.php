@@ -23,6 +23,15 @@ class MediaMultipleFiles extends MediaUploader
 
         $previousFiles = $this->get($entry);
 
+        // name the new files before changing anything, so a file that is not allowed does not remove or leave files behind
+        $filesToAdd = [];
+
+        foreach ($value ?? [] as $file) {
+            if ($file && is_file($file)) {
+                $filesToAdd[] = [$file, $this->getFileName($file)];
+            }
+        }
+
         if ($filesToDelete) {
             foreach ($previousFiles as $previousFile) {
                 if (in_array($this->getMediaIdentifier($previousFile, $entry), $filesToDelete)) {
@@ -31,10 +40,8 @@ class MediaMultipleFiles extends MediaUploader
             }
         }
 
-        foreach ($value ?? [] as $file) {
-            if ($file && is_file($file)) {
-                $this->addMediaFile($entry, $file);
-            }
+        foreach ($filesToAdd as [$file, $fileName]) {
+            $this->addMediaFile($entry, $file, null, $fileName);
         }
     }
 
@@ -42,12 +49,19 @@ class MediaMultipleFiles extends MediaUploader
     {
         $fileOrder = $this->getFileOrderFromRequest();
 
+        // name all the files before adding any, so a file that is not allowed does not leave the others behind
+        $filesToAdd = [];
+
         foreach ($value as $row => $files) {
             foreach ($files ?? [] as $file) {
                 if ($file && is_file($file)) {
-                    $this->addMediaFile($entry, $file, $row);
+                    $filesToAdd[] = [$row, $file, $this->getFileName($file)];
                 }
             }
+        }
+
+        foreach ($filesToAdd as [$row, $file, $fileName]) {
+            $this->addMediaFile($entry, $file, $row, $fileName);
         }
 
         foreach ($previousValues as $file) {

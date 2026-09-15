@@ -80,9 +80,33 @@ CRUD::field('main_image')
         ->withMedia([
             'collection' => 'my_collection', // default: the spatie config default
             'disk' => 'my_disk', // default: the spatie config default
-            'mediaName' => 'custom_media_name' // default: the field name
+            'mediaName' => 'custom_media_name', // default: the field name
+            'fileNamer' => fn($file, $uploader) => 'custom_name.jpg', // default: the Backpack file name generator
+            'allowedExtensions' => ['jpg', 'png'], // default: the `allowed_upload_extensions` in config/backpack/crud.php
         ]);
 ```
+
+### Allowed file types
+
+Media uploaders use the same [allowed file types](https://backpackforlaravel.com/docs/6.x/crud-uploaders#allowed-file-types) as the Backpack uploaders (requires `backpack/crud` 6.8.17 or newer). Files are only added to the media library if their extension is in the allow list. File types that browsers render as pages, like `svg` and `html`, are **not** allowed by default, because they could run scripts in the session of the admin that opens them. Extensions that web servers may execute (like `php`) are always rejected.
+
+With the default file namer, the extension comes from the file content, not from the name the user sent. You can change the allowed extensions for all fields in `config/backpack/crud.php`, or for a single field using `allowedExtensions`:
+
+```php
+use Backpack\CRUD\app\Library\Uploaders\Support\FileExtensions;
+
+CRUD::field('logo')
+        ->type('upload')
+        ->withMedia([
+            'allowedExtensions' => [...FileExtensions::DEFAULT_ALLOWED, 'svg'],
+        ]);
+```
+
+When a file is not allowed, the form is returned with a validation error for the field (or for the subfield of the repeatable row that sent it), and nothing is changed: no media is added and the existing media of the entry is kept.
+
+The `image` field only accepts `jpeg`, `png`, `gif`, `webp` and `avif` images, and the image content must match its type. Other images are ignored.
+
+**NOTE:** The allow list is a safety net, not a replacement for validation. You should still validate your fields with the file types they expect, using [Backpack's custom validation rules](https://backpackforlaravel.com/docs/6.x/custom-validation-rules). If your version of Spatie Media Library supports the `allowed_extensions` and `disallowed_extensions` options in `config/media-library.php`, they are also applied.
 
 ### Customizing the saving process (adding thumbnails, responsive images  etc)
 

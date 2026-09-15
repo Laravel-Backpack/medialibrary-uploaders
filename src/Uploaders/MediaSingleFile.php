@@ -14,12 +14,15 @@ class MediaSingleFile extends MediaUploader
 
         $previousFile = $this->get($entry);
 
-        if ($previousFile && ($value && is_a($value, UploadedFile::class) || request()->has($this->getName()))) {
+        // get the name first, so a file that is not allowed does not remove the previous one
+        $fileName = $value && is_a($value, UploadedFile::class) ? $this->getFileName($value) : null;
+
+        if ($previousFile && ($fileName !== null || request()->has($this->getName()))) {
             $previousFile->delete();
         }
 
-        if ($value && is_a($value, UploadedFile::class)) {
-            $this->addMediaFile($entry, $value);
+        if ($fileName !== null) {
+            $this->addMediaFile($entry, $value, null, $fileName);
         }
     }
 
@@ -30,10 +33,17 @@ class MediaSingleFile extends MediaUploader
         $filesToClear = CRUD::getRequest()->get('clear_'.$this->getRepeatableContainerName()) ?? [];
         $orderedFiles = $this->getFileOrderFromRequest();
 
+        // name all the files before adding any, so a file that is not allowed does not leave the others behind
+        $filesToAdd = [];
+
         foreach ($values as $row => $rowValue) {
             if (isset($rowValue[$this->getName()]) && is_file($rowValue[$this->getName()])) {
-                $this->addMediaFile($entry, $rowValue[$this->getName()], $row);
+                $filesToAdd[$row] = [$rowValue[$this->getName()], $this->getFileName($rowValue[$this->getName()])];
             }
+        }
+
+        foreach ($filesToAdd as $row => [$file, $fileName]) {
+            $this->addMediaFile($entry, $file, $row, $fileName);
         }
 
         foreach ($previousFiles as $previousFile) {

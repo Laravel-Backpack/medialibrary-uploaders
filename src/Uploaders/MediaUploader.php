@@ -146,15 +146,18 @@ abstract class MediaUploader extends Uploader
         return $values;
     }
 
-    protected function addMediaFile($entry, $file, $order = null)
+    protected function addMediaFile($entry, $file, $order = null, ?string $fileName = null)
     {
         $this->order = $order;
+
+        // get the name first, so a file that is not allowed is rejected before it is added to the media library
+        $fileName ??= $this->getFileName($file);
 
         $fileAdder = $this->initFileAdder($entry, $file);
 
         $fileAdder = $fileAdder->usingName($this->mediaName)
                                 ->withCustomProperties($this->getCustomProperties())
-                                ->usingFileName($this->getFileName($file));
+                                ->usingFileName($fileName);
 
         $constrainedMedia = new ConstrainedFileAdder();
         $constrainedMedia->setFileAdder($fileAdder);
