@@ -31,6 +31,14 @@ class MediaDropzoneUploader extends MediaAjaxUploader
             return ! Str::startsWith($value, Str::finish($this->temporaryFolder, '/'));
         });
 
+        // name the new files before changing anything, so a file that is not allowed does not remove or leave files behind
+        $filesToAdd = [];
+
+        foreach ($uploadedFiles as $key => $value) {
+            $file = new UploadedFile($this->temporaryDisk->path($value), $value);
+            $filesToAdd[] = [$file, $this->getFileName($file)];
+        }
+
         $previousDatabaseFiles = $this->getPreviousFiles($entry) ?? [];
 
         foreach ($previousDatabaseFiles as $previousFile) {
@@ -39,9 +47,8 @@ class MediaDropzoneUploader extends MediaAjaxUploader
             }
         }
 
-        foreach ($uploadedFiles as $key => $value) {
-            $file = new UploadedFile($this->temporaryDisk->path($value), $value);
-            $this->addMediaFile($entry, $file);
+        foreach ($filesToAdd as [$file, $fileName]) {
+            $this->addMediaFile($entry, $file, null, $fileName);
         }
     }
 

@@ -61,6 +61,8 @@ class MediaAjaxUploader extends BackpackAjaxUploader
         }, $values);
 
         $sentFiles = [];
+        // name all the files before adding any, so a file that is not allowed does not leave the others behind
+        $filesToAdd = [];
         foreach ($values as $row => $files) {
             if (! is_array($files)) {
                 $files = json_decode($files, true) ?? [];
@@ -79,8 +81,12 @@ class MediaAjaxUploader extends BackpackAjaxUploader
 
             foreach ($uploadedFiles ?? [] as $key => $value) {
                 $file = new File(Storage::disk($temporaryDisk)->path($value));
-                $this->addMediaFile($entry, $file, $row);
+                $filesToAdd[] = [$row, $file, $this->getFileName($file)];
             }
+        }
+
+        foreach ($filesToAdd as [$row, $file, $fileName]) {
+            $this->addMediaFile($entry, $file, $row, $fileName);
         }
 
         foreach ($previousValues as $previousFile) {

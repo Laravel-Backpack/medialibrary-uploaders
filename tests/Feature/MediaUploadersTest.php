@@ -216,6 +216,102 @@ class MediaUploadersTest extends FeatureTestCase
         $this->assertEquals(0, count($files));
     }
 
+    public function test_it_does_not_upload_files_with_extensions_that_are_not_allowed()
+    {
+        $response = $this->post($this->testBaseUrl, [
+            'upload'          => $this->getFileWithContent('payload.html', 'just some text'),
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('upload');
+
+        $response = $this->post($this->testBaseUrl, [
+            'upload_multiple' => [
+                $this->getUploadedFile('avatar1.jpg'),
+                $this->getFileWithContent('payload.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'),
+            ],
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('upload_multiple');
+
+        $this->assertDatabaseCount('uploaders', 0);
+        $this->assertDatabaseCount('media', 0);
+        $this->assertEmpty(Storage::disk('uploaders')->allFiles());
+    }
+
+    public function test_it_keeps_previous_files_when_the_new_file_is_not_allowed()
+    {
+        self::initUploaderWithFiles();
+
+        $response = $this->put($this->testBaseUrl.'/1', [
+            'upload' => $this->getFileWithContent('payload.svg', 'just some text'),
+            'id'     => 1,
+        ]);
+
+        $response->assertSessionHasErrors('upload');
+
+        $response = $this->put($this->testBaseUrl.'/1', [
+            'upload_multiple'       => [$this->getFileWithContent('payload.html', 'just some text')],
+            'clear_upload_multiple' => ['2/avatar2.jpg'],
+            'id'                    => 1,
+        ]);
+
+        $response->assertSessionHasErrors('upload_multiple');
+
+        $this->assertEquals(3, MediaUploader::first()->getMedia()->count());
+        $this->assertTrue(Storage::disk('uploaders')->exists('1/avatar1.jpg'));
+        $this->assertTrue(Storage::disk('uploaders')->exists('2/avatar2.jpg'));
+        $this->assertTrue(Storage::disk('uploaders')->exists('3/avatar3.jpg'));
+    }
+
+    public function test_it_can_upload_a_base64_image()
+    {
+        $response = $this->post($this->testBaseUrl.'/base64-image', [
+            'image' => $this->getBase64Image(),
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasNoErrors();
+
+        $this->assertEquals(1, MediaUploader::first()->getMedia()->count());
+        $this->assertStringEndsWith('.jpeg', MediaUploader::first()->getMedia()->first()->file_name);
+    }
+
+    public static function invalidBase64Images(): array
+    {
+        $svg = base64_encode('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.domain)</script></svg>');
+        $html = base64_encode('<!DOCTYPE html><html><body><script>alert(document.domain)</script></body></html>');
+
+        return [
+            'svg'                => ['data:image/svg+xml;base64,'.$svg],
+            'html declared as image' => ['data:image/html;base64,'.$html],
+            'svg declared as jpeg'   => ['data:image/jpeg;base64,'.$svg],
+            'invalid base64'         => ['data:image/png;base64,not-base64!'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidBase64Images')]
+    public function test_it_does_not_upload_base64_images_that_are_not_valid(string $image)
+    {
+        $response = $this->post($this->testBaseUrl.'/base64-image', [
+            'image' => $image,
+        ]);
+
+        $response->assertStatus(302);
+
+        $this->assertDatabaseCount('media', 0);
+        $this->assertEmpty(Storage::disk('uploaders')->allFiles());
+    }
+
+    private function getFileWithContent(string $clientName, string $content): \Illuminate\Http\UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'backpack-upload');
+        file_put_contents($path, $content);
+
+        return new \Illuminate\Http\UploadedFile($path, $clientName, null, null, true);
+    }
+
     private static function initUploader()
     {
         $uploader = new MediaUploader();

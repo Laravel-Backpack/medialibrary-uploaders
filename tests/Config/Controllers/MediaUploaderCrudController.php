@@ -5,6 +5,7 @@ namespace Backpack\MediaLibraryUploaders\Tests\Config\Controllers;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Backpack\MediaLibraryUploaders\Tests\Config\Models\MediaUploader;
+use Illuminate\Support\Facades\Route;
 
 class MediaUploaderCrudController extends CrudController
 {
@@ -18,6 +19,18 @@ class MediaUploaderCrudController extends CrudController
 
         $this->crud->setRoute(config('backpack.base.route_prefix').'/media-uploader');
         $this->crud->setModel(MediaUploader::class);
+    }
+
+    protected function setupBase64ImageRoutes()
+    {
+        Route::post(config('backpack.base.route_prefix').'/media-uploader/base64-image', [self::class, 'base64Image']);
+    }
+
+    protected function base64Image()
+    {
+        CRUD::field('image')->type('image')->withMedia(['disk' => 'uploaders']);
+
+        return $this->store();
     }
 
     protected function setupCreateOperation()

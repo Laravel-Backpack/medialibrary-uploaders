@@ -9,6 +9,24 @@ use Illuminate\Support\Str;
 
 class MediaSingleBase64Image extends MediaUploader
 {
+    private const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
+
+    private function isValidBase64Image(mixed $value): bool
+    {
+        if (! is_string($value) || ! preg_match('#^data:image/(jpeg|png|gif|webp|avif);base64,#i', $value)) {
+            return false;
+        }
+
+        $decoded = base64_decode(Str::after($value, ';base64,'), true);
+        if ($decoded === false) {
+            return false;
+        }
+
+        $detected = (new \finfo(FILEINFO_MIME_TYPE))->buffer($decoded);
+
+        return in_array($detected, self::ALLOWED_MIME_TYPES, true);
+    }
+
     public function uploadFiles(Model $entry, $value = null)
     {
         $value = $value ?? CrudPanelFacade::getRequest()->get($this->getName());
@@ -25,20 +43,35 @@ class MediaSingleBase64Image extends MediaUploader
             return;
         }
 
-        if (Str::startsWith($value, 'data:image')) {
+        if ($this->isValidBase64Image($value)) {
+            // get the name first, so an image that is not allowed does not remove the previous one
+            $fileName = $this->getFileName($value);
+
             if ($previousImage) {
                 $previousImage->delete();
             }
-            $this->addMediaFile($entry, $value);
+            $this->addMediaFile($entry, $value, null, $fileName);
         }
     }
 
     public function uploadRepeatableFiles($value, $previousValues, $entry = null)
     {
+        // name all the images before adding any, so an image that is not allowed does not leave the others behind
+        $imagesToAdd = [];
+
+        foreach ($value as $row => $rowValue) {
+            if ($this->isValidBase64Image($rowValue)) {
+                $imagesToAdd[$row] = $this->getFileName($rowValue);
+            }
+        }
+
         foreach ($value as $row => $rowValue) {
             if ($rowValue) {
-                if (Str::startsWith($rowValue, 'data:image')) {
-                    $this->addMediaFile($entry, $rowValue, $row);
+                if (is_string($rowValue) && Str::startsWith($rowValue, 'data:')) {
+                    // images that are not valid are not added, and replace the previous image in the row
+                    if (isset($imagesToAdd[$row])) {
+                        $this->addMediaFile($entry, $rowValue, $row, $imagesToAdd[$row]);
+                    }
 
                     continue;
                 }
@@ -73,7 +106,7 @@ class MediaSingleBase64Image extends MediaUploader
 
     public function shouldUploadFiles($value): bool
     {
-        return $value && is_string($value) && Str::startsWith($value, 'data:image');
+        return $value && is_string($value) && (bool) preg_match('#^data:image/(jpeg|png|gif|webp|avif);base64,#i', $value);
     }
 
     public function shouldKeepPreviousValueUnchanged(Model $entry, $entryValue): bool
